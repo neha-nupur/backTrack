@@ -9,7 +9,9 @@ import EventsPage from '../pages/admin/EventsPage';
 import ChallengesPage from '../pages/admin/ChallengesPage';
 import ParticipantsPage from '../pages/admin/ParticipantsPage';
 import SettingsPage from '../pages/admin/SettingsPage';
+import AttemptsPage from '../pages/admin/AttemptsPage';
 import ParticipantDashboardShell from '../pages/ParticipantDashboardShell';
+import ChallengePage from '../pages/participant/ChallengePage';
 import ROLES from '../constants/roles';
 
 const AppRoutes = () => {
@@ -63,6 +65,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/attempts"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <AttemptsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Protected Participant Routes */}
       <Route
@@ -70,6 +80,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={[ROLES.PARTICIPANT]}>
             <ParticipantDashboardShell />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/participant/events/:eventId/challenges"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.PARTICIPANT]}>
+            <ChallengePage />
           </ProtectedRoute>
         }
       />

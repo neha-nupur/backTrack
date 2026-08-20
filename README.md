@@ -19,6 +19,9 @@ Node.js + Express Backend
 ```
 
 ### Core Concept & Participant Constraints
+- **Phase 5**: `executor` worker threads securely evaluating JavaScript user logic.
+- **Phase 6**: MongoDB storage of attempts enforcing strict participant boundaries (no cross-participant viewing).
+- **Phase 7**: Dedicated Admin Operational Dashboard tracking live event performance, tracking executions while preserving strict separation of Execution vs. Correctness (per PDF rule since there is no internal judge for expected output logic).
 - **Participant view**: Reverse-engineers hidden logic by feeding input into a terminal/CMD-style black box interface and observing outputs.
 - **Participant hidden fields**: Challenge title, description, question statement, expected algorithm, hidden JavaScript code, solutions, scores, leaderboard, rank, and other participants' stats are **strictly omitted** from participant API responses and UI.
 - **Participant Auth**: No public registration or sign-up. Participants are added by the Admin and log in using their college email and a system-level master password (stored as a secure bcrypt hash).
@@ -108,7 +111,6 @@ Backend will start on `http://localhost:5000` with hot-reloading.
 Start frontend client:
 ```bash
 npm run dev:frontend
-```
 Frontend will start on `http://localhost:5173`.
 
 ---
@@ -166,6 +168,10 @@ Frontend will start on `http://localhost:5173`.
 - [x] React + Vite frontend configured with Tailwind CSS, React Router, and centralized Axios `apiClient.js`.
 - [x] Verification interface implemented displaying backend connection and health status.
 - [x] Production build check passed for frontend (`npm run build`).
+- [x] Phase 5: Execution Service (Sandboxed JS)
+- [x] Phase 6: Attempt Persistence & Evaluation (Phase 6 Complete)
+- [x] Phase 7: Admin Attempt Monitoring & Event Operations (Phase 7 Complete)
+- [ ] Phase 8: ...
 
 ---
 

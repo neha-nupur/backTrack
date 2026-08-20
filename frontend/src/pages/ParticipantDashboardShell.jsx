@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getLiveEvents, getUpcomingEvents, startEvent } from '../services/eventService';
 
 const ParticipantDashboardShell = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [liveEvents, setLiveEvents] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,15 +184,21 @@ const ParticipantDashboardShell = () => {
                     )}
 
                     {statusInfo.session ? (
-                      <div className="p-4 bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-xs rounded-lg space-y-2">
+                      <div className="p-4 bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-xs rounded-lg space-y-3">
                         <div className="flex items-center gap-2 font-bold text-emerald-400">
                           <span>✅</span>
                           <span>Event Session Active</span>
                         </div>
                         <p className="text-slate-300 font-sans">
                           You have successfully entered <span className="font-bold text-white font-mono">{ev.name}</span>.
-                          Challenge workspace interface will load in Phase 4.
                         </p>
+                        <button
+                          onClick={() => navigate(`/participant/events/${ev.id}/challenges`)}
+                          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-900/40 transition flex items-center gap-2"
+                        >
+                          <span>🚀</span>
+                          <span>Open Challenge Workspace &rarr;</span>
+                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">

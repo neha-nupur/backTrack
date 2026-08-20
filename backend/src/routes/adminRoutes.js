@@ -7,6 +7,7 @@ const participantController = require('../controllers/participantController');
 const settingsController = require('../controllers/settingsController');
 const eventController = require('../controllers/eventController');
 const challengeController = require('../controllers/challengeController');
+const adminMonitoringController = require('../controllers/adminMonitoringController');
 const {
   validateObjectId,
   validateCreateParticipant,
@@ -60,5 +61,11 @@ router.delete('/challenges/:id', validateChallengeId, challengeController.remove
 
 // --- Settings Endpoints ---
 router.patch('/settings/master-password', validateMasterPasswordUpdate, settingsController.updateMasterPassword);
+
+// --- Monitoring & Operational Endpoints ---
+router.get('/dashboard', adminMonitoringController.getDashboard);
+router.get('/attempts', adminMonitoringController.getAttempts);
+router.get('/attempts/:id', adminMonitoringController.getAttemptDetail);
+router.get('/events/:eventId/activity', adminMonitoringController.getEventActivity);
 
 module.exports = router;

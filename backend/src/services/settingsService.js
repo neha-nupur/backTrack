@@ -8,15 +8,15 @@ const MASTER_PASSWORD_KEY = 'masterPasswordHash';
 const MIN_PASSWORD_LENGTH = 8;
 
 /**
- * Retrieve the current master password hash from DB.
- * Falls back to env var if no DB record exists (supports Phase 1 migration).
+ * Retrieve the hashed master password from the database.
+ * Falls back to env var if no DB record exists.
  */
 const getMasterPasswordHash = async () => {
   const setting = await SystemSetting.findOne({ key: MASTER_PASSWORD_KEY });
   if (setting && setting.value) {
     return setting.value;
   }
-  // Fallback to environment variable (Phase 1 backward compatibility)
+  // Fallback to environment variable
   return env.MASTER_PASSWORD_HASH || null;
 };
 

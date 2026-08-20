@@ -33,7 +33,6 @@ const bootstrapAdmin = async () => {
     return initialAdmin;
   } catch (error) {
     logger.error('Admin bootstrap failed:', error.message);
-    // Do not crash server startup, but log critical failure
     return null;
   }
 };

@@ -7,13 +7,13 @@ const DevVerificationPage = () => {
       <div className="max-w-3xl w-full text-center mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-950/80 border border-cyan-700/60 rounded-full text-cyan-400 text-xs font-mono mb-4">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-          PHASE 0 ARCHITECTURAL BASELINE
+          ARCHITECTURAL BASELINE
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2 font-mono">
           BlackBox Coding Event Platform
         </h1>
         <p className="text-slate-400 text-sm max-w-xl mx-auto">
-          Phase 0 Foundation, Architecture, Environment Setup & API Verification Dashboard.
+          Foundation, Architecture, Environment Setup & API Verification Dashboard.
         </p>
       </div>
 

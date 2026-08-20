@@ -54,6 +54,19 @@ export const getParticipantChallenges = async (eventId) => {
   return await apiClient.get(`/events/${eventId}/challenges`);
 };
 
+/**
+ * Execute a challenge's hidden code with participant input (PARTICIPANT)
+ * POST /api/events/:eventId/challenges/:challengeId/execute
+ * 
+ * SECURITY: The response NEVER contains hiddenCode.
+ * Only sanitized output and error information is returned.
+ */
+export const executeChallenge = async (eventId, challengeId, userInput = '') => {
+  return await apiClient.post(`/events/${eventId}/challenges/${challengeId}/execute`, {
+    userInput,
+  });
+};
+
 export default {
   adminListChallenges,
   adminGetChallengeById,
@@ -62,4 +75,5 @@ export default {
   adminUpdateChallengeStatus,
   adminDeleteChallenge,
   getParticipantChallenges,
+  executeChallenge,
 };

@@ -1,19 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardStats } from '../services/adminMonitoringService';
 
 const AdminDashboardShell = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await getDashboardStats();
+        if (res.success) {
+          setStats(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load stats', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <AdminLayout title="Dashboard Overview">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Admin Console</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Welcome back, {user?.name || 'Administrator'}. Manage platform configuration and participant access.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Admin Console</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Welcome back, {user?.name || 'Administrator'}. Manage platform configuration and monitor activity.
+            </p>
+          </div>
+          <button onClick={() => window.location.reload()} className="px-3 py-1 bg-slate-800 text-xs rounded text-slate-300 hover:bg-slate-700">Refresh Data</button>
+        </div>
+
+        {/* Real Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
+            <span className="text-xs font-mono text-slate-500">Participants</span>
+            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.participants?.total || 0}</span>
+            <span className="text-[10px] text-emerald-400">{loading ? '' : `${stats?.participants?.active || 0} active`}</span>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
+            <span className="text-xs font-mono text-slate-500">Events (Live)</span>
+            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.events?.live || 0}</span>
+            <span className="text-[10px] text-indigo-400">{loading ? '' : `${stats?.events?.total || (stats?.events?.upcoming + stats?.events?.live + stats?.events?.completed) || 0} total events`}</span>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
+            <span className="text-xs font-mono text-slate-500">Challenges</span>
+            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.challenges?.total || 0}</span>
+            <span className="text-[10px] text-emerald-400">{loading ? '' : `${stats?.challenges?.enabled || 0} enabled`}</span>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
+            <span className="text-xs font-mono text-slate-500">Total Attempts</span>
+            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.attempts?.total || 0}</span>
+            <span className="text-[10px] text-amber-400">Recorded executions</span>
+          </div>
         </div>
 
         {/* Quick Navigation Cards */}

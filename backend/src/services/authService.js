@@ -67,23 +67,20 @@ const authenticateAdmin = async (email, password) => {
 
 /**
  * Authenticate Participant User
- * Uses DB-backed master password hash (with env fallback for Phase 1 compatibility)
+ * Uses DB-backed master password hash.
  */
 const authenticateParticipant = async (email, password) => {
   const normalizedEmail = email.toLowerCase().trim();
   const participant = await Participant.findOne({ email: normalizedEmail });
 
-  // 1. Check if participant email exists
   if (!participant) {
     throw new AppError('This email is not registered for the event.', 401, 'UNREGISTERED_EMAIL');
   }
 
-  // 2. Check if participant account is active
   if (participant.status !== PARTICIPANT_STATUS.ACTIVE) {
     throw new AppError('This participant account is disabled.', 401, 'ACCOUNT_DISABLED');
   }
 
-  // 3. Compare password against DB-backed Master Password Hash
   const masterHash = await getMasterPasswordHash();
 
   let isMasterPasswordValid = false;

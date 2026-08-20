@@ -192,7 +192,7 @@ const ChallengeFormModal = ({
               spellCheck="false"
             />
             <p className="text-[11px] text-slate-400">
-              This code will execute in a secure sandbox in Phase 5. It is strictly hidden from participant API responses.
+              This code will execute in a secure sandbox. It is strictly hidden from participant API responses.
             </p>
           </div>
 
