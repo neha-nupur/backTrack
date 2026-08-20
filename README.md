@@ -325,3 +325,54 @@ When a participant requests `POST /api/events/:eventId/start`, the server author
 ### Frontend Routes & Capabilities
 - `/admin/events` — Admin event management table, search, filter, pagination, modal create/edit, status transition triggers with safety confirmations.
 - `/participant/dashboard` — Live events list with dynamic status & "Start Event" action, upcoming scheduled events list with countdown timers, auto-refresh and error handling.
+
+---
+
+## Phase 4 — Challenge Management, Lifecycle & Secure Hidden JavaScript Storage
+
+### Challenge Model & Data Rules
+- **Schema Fields**:
+  - `_id`: Unique challenge identifier.
+  - `eventId`: ObjectId reference to `Event` (required, indexed).
+  - `title`: Challenge title (required, max 150 chars, trimmed).
+  - `description`: Problem description (required, max 2000 chars, trimmed).
+  - `hiddenCode`: Secret JavaScript algorithm logic (required, string, max 50 KB).
+  - `inputFormat`: Input format explanation (optional string, max 1000 chars).
+  - `outputFormat`: Output format explanation (optional string, max 1000 chars).
+  - `constraints`: Constraints explanation (optional string, max 1000 chars).
+  - `score`: Numeric point value (required, positive number $> 0$, default 100).
+  - `hackerRankUrl`: External HackerRank URL (valid URL format if provided).
+  - `status`: Challenge availability state (`ENABLED` / `DISABLED`, default `ENABLED`).
+  - `createdAt`, `updatedAt`: ISO timestamps.
+- **Indexes**: Compound index on `{ eventId: 1, status: 1 }` and `{ eventId: 1, createdAt: -1 }`.
+
+### Critical Security Boundaries for Hidden JavaScript
+1. **Zero Exposure to Participants**: `hiddenCode` is **NEVER** returned in any participant endpoint, JWT token, error message, log file, frontend React state, or build bundle.
+2. **Key Absence Rule**: Participant serializers strictly omit the `hiddenCode` property entirely. It is not returned as `null`, `""`, or `"[REDACTED]"`.
+3. **Admin-Only Access**: `hiddenCode` is only returned on authenticated administrative endpoints (`GET /api/admin/challenges/:id`, `GET /api/admin/events/:eventId/challenges`) to enable problem configuration and editing.
+4. **No Code Execution in Phase 4**: Hidden JavaScript is stored, managed, and validated as pure text data. No `eval()`, `new Function()`, VM, or execution runner is invoked. Execution is reserved for Phase 5.
+
+### Challenge Management APIs (ADMIN ONLY)
+
+| Method | Path | Auth Required | Role | Returns `hiddenCode` | Purpose |
+|--------|------|---------------|------|----------------------|---------|
+| GET | `/api/admin/events/:eventId/challenges` | Yes | ADMIN | Yes | List challenges for an event (search, status filter, pagination) |
+| GET | `/api/admin/challenges/:id` | Yes | ADMIN | Yes | Fetch complete administrative challenge details |
+| POST | `/api/admin/events/:eventId/challenges` | Yes | ADMIN | Yes | Create new challenge assigned to an event |
+| PATCH | `/api/admin/challenges/:id` | Yes | ADMIN | Yes | Update challenge details & hidden code |
+| PATCH | `/api/admin/challenges/:id/status` | Yes | ADMIN | Yes | Toggle status (`ENABLED` / `DISABLED`) |
+| DELETE | `/api/admin/challenges/:id` | Yes | ADMIN | No | Delete challenge |
+
+### Participant-Safe Challenge API (PARTICIPANT)
+
+| Method | Path | Auth Required | Role | Returns `hiddenCode` | Purpose |
+|--------|------|---------------|------|----------------------|---------|
+| GET | `/api/events/:eventId/challenges` | Yes | PARTICIPANT | **NEVER** | Fetch participant-visible challenges for an event |
+
+### Participant-Safe Data Serialization
+- **Included Fields**: `id`, `eventId`, `title`, `description`, `inputFormat`, `outputFormat`, `constraints`, `score`, `hackerRankUrl`, `status`.
+- **Explicitly Excluded Fields**: `hiddenCode`, internal admin metadata, database system keys.
+
+### Frontend Routes & Components
+- `/admin/events/:eventId/challenges` — Administrative challenge management console for a specific event with breadcrumbs, challenges table, search, status filter, pagination, Add/Edit modal with monospace code editor, enable/disable triggers, and delete confirmations.
+- `ChallengeFormModal` — Create/edit modal featuring title, description, multiline hidden JavaScript code editor with formatting/indentation preservation, input/output formats, constraints, score, and HackerRank URL.

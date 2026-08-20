@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout';
 import EventFormModal from '../../components/admin/EventFormModal';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
@@ -305,6 +306,14 @@ const EventsPage = () => {
                         {renderStatusBadge(ev.status)}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
+                        {/* Challenges Link */}
+                        <Link
+                          to={`/admin/events/${ev.id}/challenges`}
+                          className="px-2.5 py-1 text-xs rounded bg-indigo-950/70 hover:bg-indigo-900 text-indigo-300 border border-indigo-800/60 font-semibold transition inline-block"
+                        >
+                          Challenges
+                        </Link>
+
                         {/* Status Transition Action */}
                         {ev.status === 'UPCOMING' && (
                           <button

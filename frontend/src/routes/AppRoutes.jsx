@@ -6,6 +6,7 @@ import AdminLoginPage from '../pages/AdminLoginPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminDashboardShell from '../pages/AdminDashboardShell';
 import EventsPage from '../pages/admin/EventsPage';
+import ChallengesPage from '../pages/admin/ChallengesPage';
 import ParticipantsPage from '../pages/admin/ParticipantsPage';
 import SettingsPage from '../pages/admin/SettingsPage';
 import ParticipantDashboardShell from '../pages/ParticipantDashboardShell';
@@ -35,6 +36,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <EventsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/events/:eventId/challenges"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <ChallengesPage />
           </ProtectedRoute>
         }
       />

@@ -14,8 +14,11 @@ const PARTICIPANT_STATUS = Object.freeze({
 });
 
 const CHALLENGE_STATUS = Object.freeze({
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
+  ENABLED: 'ENABLED',
+  DISABLED: 'DISABLED',
+  // Backward-compatible aliases
+  ACTIVE: 'ENABLED',
+  INACTIVE: 'DISABLED',
 });
 
 module.exports = {

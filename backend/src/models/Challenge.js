@@ -9,38 +9,50 @@ const challengeSchema = new mongoose.Schema(
       required: [true, 'Event ID reference is required'],
       index: true,
     },
-    challengeNumber: {
-      type: Number,
-      required: [true, 'Challenge number is required'],
-    },
-    internalName: {
+    title: {
       type: String,
-      default: '',
+      required: [true, 'Challenge title is required'],
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: [true, 'Challenge description is required'],
       trim: true,
     },
     hiddenCode: {
       type: String,
       required: [true, 'Hidden JavaScript code logic is required'],
     },
-    inputConstraints: {
+    inputFormat: {
       type: String,
       default: '',
       trim: true,
     },
-    hackerRankUrl: {
+    outputFormat: {
       type: String,
-      required: [true, 'HackerRank URL is required'],
+      default: '',
+      trim: true,
+    },
+    constraints: {
+      type: String,
+      default: '',
       trim: true,
     },
     score: {
       type: Number,
+      required: [true, 'Challenge score is required'],
       default: 100,
-      min: [0, 'Score must be non-negative'],
+      min: [1, 'Score must be a positive number'],
+    },
+    hackerRankUrl: {
+      type: String,
+      default: '',
+      trim: true,
     },
     status: {
       type: String,
-      enum: [CHALLENGE_STATUS.ACTIVE, CHALLENGE_STATUS.INACTIVE],
-      default: CHALLENGE_STATUS.ACTIVE,
+      enum: [CHALLENGE_STATUS.ENABLED, CHALLENGE_STATUS.DISABLED],
+      default: CHALLENGE_STATUS.ENABLED,
     },
   },
   {
@@ -48,14 +60,8 @@ const challengeSchema = new mongoose.Schema(
   }
 );
 
-// Helper method to sanitize challenge payload for participant endpoint
-challengeSchema.methods.toParticipantJSON = function () {
-  return {
-    id: this._id,
-    challengeNumber: this.challengeNumber,
-    inputConstraints: this.inputConstraints,
-    hackerRankUrl: this.hackerRankUrl,
-  };
-};
+// Compound indexes for query performance
+challengeSchema.index({ eventId: 1, status: 1 });
+challengeSchema.index({ eventId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Challenge', challengeSchema);

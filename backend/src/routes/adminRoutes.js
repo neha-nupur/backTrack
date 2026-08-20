@@ -6,6 +6,7 @@ const ROLES = require('../constants/roles');
 const participantController = require('../controllers/participantController');
 const settingsController = require('../controllers/settingsController');
 const eventController = require('../controllers/eventController');
+const challengeController = require('../controllers/challengeController');
 const {
   validateObjectId,
   validateCreateParticipant,
@@ -21,6 +22,14 @@ const {
   validateStatusUpdate: validateEventStatusUpdate,
   validateEventQuery,
 } = require('../validators/eventValidator');
+const {
+  validateChallengeId,
+  validateEventIdParam,
+  validateCreateChallenge,
+  validateUpdateChallenge,
+  validateChallengeStatusUpdate,
+  validateChallengeQuery,
+} = require('../validators/challengeValidator');
 
 // Protect all admin routes: require valid JWT + ADMIN role
 router.use(authenticate, authorize(ROLES.ADMIN));
@@ -40,6 +49,14 @@ router.post('/events', validateCreateEvent, eventController.create);
 router.patch('/events/:id', validateEventId, validateUpdateEvent, eventController.update);
 router.patch('/events/:id/status', validateEventId, validateEventStatusUpdate, eventController.updateStatus);
 router.delete('/events/:id', validateEventId, eventController.remove);
+
+// --- Challenge Management Endpoints ---
+router.get('/events/:eventId/challenges', validateEventIdParam, validateChallengeQuery, challengeController.listByEvent);
+router.post('/events/:eventId/challenges', validateEventIdParam, validateCreateChallenge, challengeController.create);
+router.get('/challenges/:id', validateChallengeId, challengeController.getById);
+router.patch('/challenges/:id', validateChallengeId, validateUpdateChallenge, challengeController.update);
+router.patch('/challenges/:id/status', validateChallengeId, validateChallengeStatusUpdate, challengeController.updateStatus);
+router.delete('/challenges/:id', validateChallengeId, challengeController.remove);
 
 // --- Settings Endpoints ---
 router.patch('/settings/master-password', validateMasterPasswordUpdate, settingsController.updateMasterPassword);
