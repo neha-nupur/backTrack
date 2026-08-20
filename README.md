@@ -277,3 +277,51 @@ On first server start, the admin is bootstrapped automatically.
 - `AdminLayout` — Responsive console sidebar navigation, admin profile summary, logout trigger
 - `ConfirmDialog` — Confirmation modal for destructive actions (delete, disable)
 - `ParticipantFormModal` — Create/edit modal strictly omitting password fields
+
+---
+
+## Phase 3 — Event Management, Scheduling & Participant Access
+
+### Event Model & Data Rules
+- **Schema Fields**: `_id`, `name` (required, max 150), `description` (optional, max 1000), `startTime` (Date, required), `endTime` (Date, required, must be > `startTime`), `status` (Enum: `UPCOMING`, `LIVE`, `COMPLETED`, default `UPCOMING`), `createdAt`, `updatedAt`
+- **Indexes**: Compound index on `{ status: 1, startTime: 1, endTime: 1 }` and single index on `{ name: 1 }`
+- **Time Storage**: ISO 8601 timestamps in UTC — client display formatting only
+
+### Event Lifecycle & Transition Policy
+- `UPCOMING` &rarr; `LIVE`: Allowed (admin-activated when event window is approaching/active)
+- `LIVE` &rarr; `COMPLETED`: Allowed (admin concludes event)
+- `LIVE` &rarr; `UPCOMING`: Allowed (administrative correction)
+- `COMPLETED` &rarr; `UPCOMING` / `LIVE`: **Rejected** (`400 Bad Request`) to preserve event history integrity
+
+### Event APIs (ADMIN ONLY)
+
+| Method | Path | Auth Required | Role | Purpose |
+|--------|------|---------------|------|---------|
+| GET | `/api/admin/events` | Yes | ADMIN | List events (search, status filter, pagination) |
+| GET | `/api/admin/events/:id` | Yes | ADMIN | Get single event details |
+| POST | `/api/admin/events` | Yes | ADMIN | Create new event (`name`, `description`, `startTime`, `endTime`, `status`) |
+| PATCH | `/api/admin/events/:id` | Yes | ADMIN | Update event details & scheduling |
+| PATCH | `/api/admin/events/:id/status` | Yes | ADMIN | Lifecycle transition (`UPCOMING`, `LIVE`, `COMPLETED`) |
+| DELETE | `/api/admin/events/:id` | Yes | ADMIN | Delete event record |
+
+### Participant Event APIs (PARTICIPANT ONLY)
+
+| Method | Path | Auth Required | Role | Purpose |
+|--------|------|---------------|------|---------|
+| GET | `/api/events/live` | Yes | PARTICIPANT | Get active LIVE events (sanitized response + `serverTime`) |
+| GET | `/api/events/upcoming` | Yes | PARTICIPANT | Get scheduled UPCOMING events |
+| POST | `/api/events/:eventId/start` | Yes | PARTICIPANT | Authoritatively validate and start event session |
+
+### Server-Authoritative Timing & Start Access Rules
+When a participant requests `POST /api/events/:eventId/start`, the server authoritatively validates:
+1. Participant JWT is valid and role is `PARTICIPANT`.
+2. Participant is re-queried from MongoDB to guarantee status is `ACTIVE` (`401`/`403 ACCOUNT_DISABLED` if disabled).
+3. Event exists (`404 EVENT_NOT_FOUND` if missing, `400 INVALID_ID_FORMAT` if malformed ID).
+4. Event status must be `LIVE` (`403 EVENT_NOT_LIVE` if `UPCOMING`, `403 EVENT_COMPLETED` if `COMPLETED`).
+5. Current server time $\ge$ `event.startTime` (`403 EVENT_NOT_STARTED` with scheduled start timestamp).
+6. Current server time $\le$ `event.endTime` (`403 EVENT_ENDED` if past end time).
+7. Client clocks and client-provided timestamps are completely ignored.
+
+### Frontend Routes & Capabilities
+- `/admin/events` — Admin event management table, search, filter, pagination, modal create/edit, status transition triggers with safety confirmations.
+- `/participant/dashboard` — Live events list with dynamic status & "Start Event" action, upcoming scheduled events list with countdown timers, auto-refresh and error handling.

@@ -17,7 +17,25 @@ const AdminDashboardShell = () => {
         </div>
 
         {/* Quick Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link
+            to="/admin/events"
+            className="p-6 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl shadow-xl transition group block"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-lg bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-2xl text-indigo-400">
+                🏆
+              </div>
+              <span className="text-xs font-mono text-indigo-400 group-hover:translate-x-1 transition">
+                Manage &rarr;
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-slate-100 mb-1">Events</h3>
+            <p className="text-xs text-slate-400">
+              Schedule competitions, set start/end times, and control live event status.
+            </p>
+          </Link>
+
           <Link
             to="/admin/participants"
             className="p-6 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl shadow-xl transition group block"

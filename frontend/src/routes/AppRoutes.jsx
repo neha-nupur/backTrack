@@ -5,6 +5,7 @@ import LoginPage from '../pages/LoginPage';
 import AdminLoginPage from '../pages/AdminLoginPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminDashboardShell from '../pages/AdminDashboardShell';
+import EventsPage from '../pages/admin/EventsPage';
 import ParticipantsPage from '../pages/admin/ParticipantsPage';
 import SettingsPage from '../pages/admin/SettingsPage';
 import ParticipantDashboardShell from '../pages/ParticipantDashboardShell';
@@ -26,6 +27,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
             <AdminDashboardShell />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/events"
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <EventsPage />
           </ProtectedRoute>
         }
       />

@@ -13,6 +13,7 @@ const AdminLayout = ({ children, title = 'Administration' }) => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard', icon: '📊' },
+    { label: 'Events', path: '/admin/events', icon: '🏆' },
     { label: 'Participants', path: '/admin/participants', icon: '👥' },
     { label: 'Settings', path: '/admin/settings', icon: '⚙️' },
   ];

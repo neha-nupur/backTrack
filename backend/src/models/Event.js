@@ -32,4 +32,8 @@ const eventSchema = new mongoose.Schema(
   }
 );
 
+// Compound and single field indexes for query performance
+eventSchema.index({ status: 1, startTime: 1, endTime: 1 });
+eventSchema.index({ name: 1 });
+
 module.exports = mongoose.model('Event', eventSchema);
