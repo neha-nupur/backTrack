@@ -1,8 +1,9 @@
+const bcrypt = require('bcryptjs');
 const Event = require('../models/Event');
 const Participant = require('../models/Participant');
 const AppError = require('../utils/appError');
 const logger = require('../utils/logger');
-const { EVENT_STATUS, PARTICIPANT_STATUS } = require('../constants/status');
+const { EVENT_STATUS, EVENT_TYPE, PARTICIPANT_STATUS } = require('../constants/status');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -12,12 +13,15 @@ const MAX_LIMIT = 100;
  * Format event document for administrative response
  */
 const formatAdminEvent = (doc) => ({
-  id: doc._id,
+  id: doc._id ? doc._id.toString() : doc.id,
   name: doc.name,
+  type: doc.type || EVENT_TYPE.CONTEST,
   description: doc.description || '',
   startTime: doc.startTime,
   endTime: doc.endTime,
   status: doc.status,
+  isActive: doc.isActive !== false,
+  isPasswordProtected: !!doc.passwordHash,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
 });
@@ -27,12 +31,15 @@ const formatAdminEvent = (doc) => ({
  * Explicitly omits internal database fields or potential administrative metadata
  */
 const formatParticipantEvent = (doc) => ({
-  id: doc._id,
+  id: doc._id ? doc._id.toString() : doc.id,
   name: doc.name,
+  type: doc.type || EVENT_TYPE.CONTEST,
   description: doc.description || '',
   startTime: doc.startTime,
   endTime: doc.endTime,
   status: doc.status,
+  isActive: doc.isActive !== false,
+  isPasswordProtected: !!doc.passwordHash,
 });
 
 /**
@@ -40,20 +47,31 @@ const formatParticipantEvent = (doc) => ({
  */
 const createEvent = async ({
   name,
+  type = EVENT_TYPE.CONTEST,
   description = '',
   startTime,
   endTime,
   status = EVENT_STATUS.UPCOMING,
+  isActive = true,
+  password = null,
 }) => {
+  let passwordHash = null;
+  if (password && typeof password === 'string' && password.trim()) {
+    passwordHash = await bcrypt.hash(password.trim(), 10);
+  }
+
   const event = await Event.create({
     name: name.trim(),
+    type: type || EVENT_TYPE.CONTEST,
     description: description ? description.trim() : '',
     startTime: new Date(startTime),
     endTime: new Date(endTime),
     status: status || EVENT_STATUS.UPCOMING,
+    isActive: isActive !== false,
+    passwordHash,
   });
 
-  logger.info(`[EVENT CREATED] "${event.name}" (${event._id}) with status [${event.status}]`);
+  logger.info(`[EVENT CREATED] "${event.name}" (${event._id}) type [${event.type}] with status [${event.status}]`);
   return formatAdminEvent(event);
 };
 
@@ -131,6 +149,22 @@ const updateEvent = async (id, fields) => {
     event.name = fields.name.trim();
   }
 
+  if (fields.type && (fields.type === EVENT_TYPE.DEMO || fields.type === EVENT_TYPE.CONTEST)) {
+    event.type = fields.type;
+  }
+
+  if (fields.isActive !== undefined) {
+    event.isActive = !!fields.isActive;
+  }
+
+  if (fields.password !== undefined) {
+    if (fields.password && typeof fields.password === 'string' && fields.password.trim()) {
+      event.passwordHash = await bcrypt.hash(fields.password.trim(), 10);
+    } else if (fields.password === null || fields.password === '') {
+      event.passwordHash = null;
+    }
+  }
+
   if (fields.description !== undefined) {
     event.description = fields.description ? fields.description.trim() : '';
   }
@@ -170,11 +204,6 @@ const validateStatusTransition = (currentStatus, newStatus) => {
       'INVALID_STATUS_TRANSITION'
     );
   }
-
-  // UPCOMING -> LIVE (allowed)
-  // UPCOMING -> COMPLETED (allowed if cancelled/skipped)
-  // LIVE -> COMPLETED (allowed)
-  // LIVE -> UPCOMING (allowed as administrative correction)
 };
 
 /**
@@ -212,11 +241,16 @@ const deleteEvent = async (id) => {
 };
 
 /**
- * Retrieve LIVE events for participants
+ * Retrieve LIVE events for participants (filtered by isActive: true and optional type)
  */
-const getParticipantLiveEvents = async () => {
+const getParticipantLiveEvents = async (type = null) => {
   const now = new Date();
-  const docs = await Event.find({ status: EVENT_STATUS.LIVE })
+  const filter = { status: EVENT_STATUS.LIVE, isActive: true };
+  if (type && (type === EVENT_TYPE.DEMO || type === EVENT_TYPE.CONTEST)) {
+    filter.type = type;
+  }
+
+  const docs = await Event.find(filter)
     .sort({ startTime: 1 })
     .lean();
 
@@ -227,11 +261,16 @@ const getParticipantLiveEvents = async () => {
 };
 
 /**
- * Retrieve UPCOMING events for participants
+ * Retrieve UPCOMING events for participants (filtered by isActive: true and optional type)
  */
-const getParticipantUpcomingEvents = async () => {
+const getParticipantUpcomingEvents = async (type = null) => {
   const now = new Date();
-  const docs = await Event.find({ status: EVENT_STATUS.UPCOMING })
+  const filter = { status: EVENT_STATUS.UPCOMING, isActive: true };
+  if (type && (type === EVENT_TYPE.DEMO || type === EVENT_TYPE.CONTEST)) {
+    filter.type = type;
+  }
+
+  const docs = await Event.find(filter)
     .sort({ startTime: 1 })
     .lean();
 
@@ -243,9 +282,9 @@ const getParticipantUpcomingEvents = async () => {
 
 /**
  * Start an Event (PARTICIPANT)
- * Authoritative server-side validation of participant active status, event status, and server time boundaries.
+ * Authoritative server-side validation of participant active status, event active state, event password, and server time.
  */
-const startEvent = async (eventId, participantId) => {
+const startEvent = async (eventId, participantId, password = null) => {
   // 1. Re-verify participant identity and active status from database
   const participant = await Participant.findById(participantId);
   if (!participant) {
@@ -261,7 +300,12 @@ const startEvent = async (eventId, participantId) => {
     throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
   }
 
-  // 3. Validate Event Status
+  // 3. Check Event Activation
+  if (event.isActive === false) {
+    throw new AppError('This event is currently deactivated by administrator.', 403, 'EVENT_INACTIVE');
+  }
+
+  // 4. Validate Event Status
   if (event.status === EVENT_STATUS.UPCOMING) {
     throw new AppError('Event is not live yet.', 403, 'EVENT_NOT_LIVE');
   }
@@ -270,7 +314,18 @@ const startEvent = async (eventId, participantId) => {
     throw new AppError('This event has been completed.', 403, 'EVENT_COMPLETED');
   }
 
-  // 4. Server-Authoritative Time Check
+  // 5. Check Protected Event Password
+  if (event.passwordHash) {
+    if (!password || typeof password !== 'string') {
+      throw new AppError('Event password is required to access this protected event.', 401, 'EVENT_PASSWORD_REQUIRED');
+    }
+    const isMatch = await bcrypt.compare(password.trim(), event.passwordHash);
+    if (!isMatch) {
+      throw new AppError('Invalid event password.', 401, 'INVALID_EVENT_PASSWORD');
+    }
+  }
+
+  // 6. Server-Authoritative Time Check
   const now = new Date();
   const serverTimeMs = now.getTime();
   const startTimeMs = event.startTime.getTime();
@@ -297,6 +352,7 @@ const startEvent = async (eventId, participantId) => {
   return {
     eventId: event._id,
     name: event.name,
+    type: event.type,
     status: event.status,
     startTime: event.startTime,
     endTime: event.endTime,

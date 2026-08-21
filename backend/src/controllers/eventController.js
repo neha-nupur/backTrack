@@ -6,8 +6,8 @@ const eventService = require('../services/eventService');
  */
 const create = async (req, res, next) => {
   try {
-    const { name, description, startTime, endTime, status } = req.body;
-    const event = await eventService.createEvent({ name, description, startTime, endTime, status });
+    const { name, type, description, startTime, endTime, status, isActive, password } = req.body;
+    const event = await eventService.createEvent({ name, type, description, startTime, endTime, status, isActive, password });
     return res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -106,11 +106,12 @@ const remove = async (req, res, next) => {
 
 /**
  * GET /api/events/live
- * Retrieve LIVE events (PARTICIPANT)
+ * Retrieve LIVE events (PARTICIPANT) - supports optional ?type=DEMO or ?type=CONTEST
  */
 const getLive = async (req, res, next) => {
   try {
-    const result = await eventService.getParticipantLiveEvents();
+    const { type } = req.query;
+    const result = await eventService.getParticipantLiveEvents(type);
     return res.status(200).json({
       success: true,
       message: 'Live events fetched successfully',
@@ -123,11 +124,12 @@ const getLive = async (req, res, next) => {
 
 /**
  * GET /api/events/upcoming
- * Retrieve UPCOMING events (PARTICIPANT)
+ * Retrieve UPCOMING events (PARTICIPANT) - supports optional ?type=DEMO or ?type=CONTEST
  */
 const getUpcoming = async (req, res, next) => {
   try {
-    const result = await eventService.getParticipantUpcomingEvents();
+    const { type } = req.query;
+    const result = await eventService.getParticipantUpcomingEvents(type);
     return res.status(200).json({
       success: true,
       message: 'Upcoming events fetched successfully',
@@ -140,13 +142,14 @@ const getUpcoming = async (req, res, next) => {
 
 /**
  * POST /api/events/:eventId/start
- * Start event session (PARTICIPANT)
+ * Start event session (PARTICIPANT) - verifies optional event password
  */
 const start = async (req, res, next) => {
   try {
     const participantId = req.user.id;
     const { eventId } = req.params;
-    const session = await eventService.startEvent(eventId, participantId);
+    const { password } = req.body || {};
+    const session = await eventService.startEvent(eventId, participantId, password);
     return res.status(200).json({
       success: true,
       message: 'Event started successfully',

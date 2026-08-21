@@ -111,6 +111,15 @@ const validateCreateChallenge = (req, res, next) => {
     }
   }
 
+  if (req.body.hint !== undefined && req.body.hint !== null) {
+    if (typeof req.body.hint !== 'string') {
+      return next(new AppError('Hint must be a string.', 400, 'INVALID_HINT'));
+    }
+    if (req.body.hint.trim().length > MAX_FORMAT_LENGTH) {
+      return next(new AppError(`Hint cannot exceed ${MAX_FORMAT_LENGTH} characters.`, 400, 'HINT_TOO_LONG'));
+    }
+  }
+
   // 5. Validate Score
   if (score !== undefined) {
     const numScore = Number(score);

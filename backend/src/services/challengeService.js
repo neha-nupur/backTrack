@@ -20,6 +20,7 @@ const toAdminChallengeResponse = (doc) => ({
   inputFormat: doc.inputFormat || '',
   outputFormat: doc.outputFormat || '',
   constraints: doc.constraints || '',
+  hint: doc.hint || '',
   score: doc.score,
   hackerRankUrl: doc.hackerRankUrl || '',
   status: doc.status,
@@ -29,17 +30,16 @@ const toAdminChallengeResponse = (doc) => ({
 
 /**
  * Format challenge document for participant response
- * CRITICAL SECURITY: strictly omits hiddenCode and internal admin metadata
+ * CRITICAL SECURITY & SRS SANITIZATION:
+ * Returns ONLY participant-safe fields: id, challengeNumber, inputConstraints, hint, hackerRankUrl, status.
+ * Strictly EXCLUDES: title, description, hiddenCode, score, difficulty, solution, expectedOutput, etc.
  */
-const toParticipantChallengeResponse = (doc) => ({
+const toParticipantChallengeResponse = (doc, index = 0) => ({
   id: doc._id,
   eventId: doc.eventId,
-  title: doc.title,
-  description: doc.description,
-  inputFormat: doc.inputFormat || '',
-  outputFormat: doc.outputFormat || '',
-  constraints: doc.constraints || '',
-  score: doc.score,
+  challengeNumber: index + 1,
+  inputConstraints: doc.constraints || '',
+  hint: doc.hint || '',
   hackerRankUrl: doc.hackerRankUrl || '',
   status: doc.status,
 });
@@ -54,6 +54,7 @@ const createChallenge = async (eventId, {
   inputFormat = '',
   outputFormat = '',
   constraints = '',
+  hint = '',
   score = 100,
   hackerRankUrl = '',
   status = CHALLENGE_STATUS.ENABLED,
@@ -72,6 +73,7 @@ const createChallenge = async (eventId, {
     inputFormat: inputFormat ? inputFormat.trim() : '',
     outputFormat: outputFormat ? outputFormat.trim() : '',
     constraints: constraints ? constraints.trim() : '',
+    hint: hint ? hint.trim() : '',
     score: Number(score) || 100,
     hackerRankUrl: hackerRankUrl ? hackerRankUrl.trim() : '',
     status: status || CHALLENGE_STATUS.ENABLED,
@@ -141,7 +143,7 @@ const getChallengeById = async (id) => {
 
 /**
  * Retrieve participant-safe challenges for an event (PARTICIPANT)
- * Excludes hiddenCode entirely
+ * Excludes hiddenCode, title, description, score entirely
  */
 const getParticipantChallengesByEvent = async (eventId) => {
   const event = await Event.findById(eventId);
@@ -156,7 +158,7 @@ const getParticipantChallengesByEvent = async (eventId) => {
     .sort({ createdAt: 1 })
     .lean();
 
-  return docs.map(toParticipantChallengeResponse);
+  return docs.map((doc, idx) => toParticipantChallengeResponse(doc, idx));
 };
 
 /**
@@ -182,6 +184,7 @@ const updateChallenge = async (id, fields) => {
   if (fields.inputFormat !== undefined) challenge.inputFormat = fields.inputFormat ? fields.inputFormat.trim() : '';
   if (fields.outputFormat !== undefined) challenge.outputFormat = fields.outputFormat ? fields.outputFormat.trim() : '';
   if (fields.constraints !== undefined) challenge.constraints = fields.constraints ? fields.constraints.trim() : '';
+  if (fields.hint !== undefined) challenge.hint = fields.hint ? fields.hint.trim() : '';
   if (fields.score !== undefined) challenge.score = Number(fields.score);
   if (fields.hackerRankUrl !== undefined) challenge.hackerRankUrl = fields.hackerRankUrl ? fields.hackerRankUrl.trim() : '';
   if (fields.status !== undefined) challenge.status = fields.status;

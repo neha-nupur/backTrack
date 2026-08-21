@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { EVENT_STATUS } = require('../constants/status');
+const { EVENT_STATUS, EVENT_TYPE } = require('../constants/status');
 
 const eventSchema = new mongoose.Schema(
   {
@@ -7,6 +7,11 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Event name is required'],
       trim: true,
+    },
+    type: {
+      type: String,
+      enum: [EVENT_TYPE.DEMO, EVENT_TYPE.CONTEST],
+      default: EVENT_TYPE.CONTEST,
     },
     description: {
       type: String,
@@ -26,6 +31,14 @@ const eventSchema = new mongoose.Schema(
       enum: [EVENT_STATUS.UPCOMING, EVENT_STATUS.LIVE, EVENT_STATUS.COMPLETED],
       default: EVENT_STATUS.UPCOMING,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    passwordHash: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },
@@ -33,7 +46,7 @@ const eventSchema = new mongoose.Schema(
 );
 
 // Compound and single field indexes for query performance
-eventSchema.index({ status: 1, startTime: 1, endTime: 1 });
+eventSchema.index({ status: 1, type: 1, isActive: 1, startTime: 1, endTime: 1 });
 eventSchema.index({ name: 1 });
 
 module.exports = mongoose.model('Event', eventSchema);

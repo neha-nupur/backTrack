@@ -47,24 +47,27 @@ export const adminDeleteEvent = async (id) => {
 // --- PARTICIPANT EVENT SERVICES ---
 
 /**
- * Get LIVE events available to participants
+ * Get LIVE events available to participants (optional ?type=DEMO or ?type=CONTEST)
  */
-export const getLiveEvents = async () => {
-  return await apiClient.get('/events/live');
+export const getLiveEvents = async (type = null) => {
+  const params = type ? { type } : {};
+  return await apiClient.get('/events/live', { params });
 };
 
 /**
- * Get UPCOMING events available to participants
+ * Get UPCOMING events available to participants (optional ?type=DEMO or ?type=CONTEST)
  */
-export const getUpcomingEvents = async () => {
-  return await apiClient.get('/events/upcoming');
+export const getUpcomingEvents = async (type = null) => {
+  const params = type ? { type } : {};
+  return await apiClient.get('/events/upcoming', { params });
 };
 
 /**
- * Attempt to start a LIVE event (PARTICIPANT)
+ * Attempt to start a LIVE event (PARTICIPANT) - sends optional common event password
  */
-export const startEvent = async (eventId) => {
-  return await apiClient.post(`/events/${eventId}/start`);
+export const startEvent = async (eventId, password = null) => {
+  const body = password ? { password } : {};
+  return await apiClient.post(`/events/${eventId}/start`, body);
 };
 
 export default {

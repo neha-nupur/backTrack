@@ -30,7 +30,7 @@ const AdminDashboardShell = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Admin Console</h1>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">backTrack Admin Console</h1>
             <p className="text-xs text-slate-400 mt-0.5">
               Welcome back, {user?.name || 'Administrator'}. Manage platform configuration and monitor activity.
             </p>

@@ -8,6 +8,11 @@ const EVENT_STATUS = Object.freeze({
   COMPLETED: 'COMPLETED',
 });
 
+const EVENT_TYPE = Object.freeze({
+  DEMO: 'DEMO',
+  CONTEST: 'CONTEST',
+});
+
 const PARTICIPANT_STATUS = Object.freeze({
   ACTIVE: 'ACTIVE',
   DISABLED: 'DISABLED',
@@ -23,6 +28,7 @@ const CHALLENGE_STATUS = Object.freeze({
 
 module.exports = {
   EVENT_STATUS,
+  EVENT_TYPE,
   PARTICIPANT_STATUS,
   CHALLENGE_STATUS,
 };

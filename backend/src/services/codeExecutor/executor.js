@@ -151,7 +151,7 @@ const execute = async (hiddenCode, userInput, options = {}) => {
 
     // Handle unexpected worker exit
     worker.on('exit', (code) => {
-      if (code !== 0) {
+      if (code !== 0 && !isResolved) {
         logger.warn(`[EXECUTOR] Worker exited with non-zero code: ${code}`);
         safeResolve(createErrorResult(EXECUTION_ERROR.WORKER_CRASH));
       }

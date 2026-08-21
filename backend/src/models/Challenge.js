@@ -38,6 +38,11 @@ const challengeSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    hint: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     score: {
       type: Number,
       required: [true, 'Challenge score is required'],

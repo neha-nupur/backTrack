@@ -49,7 +49,7 @@ const AdminLoginPage = () => {
           ADMINISTRATOR ACCESS ONLY
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-white">
-          BlackBox System Management
+          backTrack System Management
         </h1>
       </div>
 

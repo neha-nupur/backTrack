@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const AppError = require('../utils/appError');
-const { EVENT_STATUS } = require('../constants/status');
+const { EVENT_STATUS, EVENT_TYPE } = require('../constants/status');
 
 const MAX_NAME_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 1000;
@@ -20,7 +20,7 @@ const validateEventId = (req, res, next) => {
  * Validate Create Event Request
  */
 const validateCreateEvent = (req, res, next) => {
-  const { name, description, startTime, endTime, status } = req.body;
+  const { name, type, description, startTime, endTime, status } = req.body;
 
   // 1. Validate Name
   if (!name || typeof name !== 'string' || !name.trim()) {
@@ -32,7 +32,18 @@ const validateCreateEvent = (req, res, next) => {
     );
   }
 
-  // 2. Validate Description
+  // 2. Validate Type if provided
+  if (type !== undefined && !Object.values(EVENT_TYPE).includes(type)) {
+    return next(
+      new AppError(
+        `Invalid event type. Must be one of: [${Object.values(EVENT_TYPE).join(', ')}].`,
+        400,
+        'INVALID_EVENT_TYPE'
+      )
+    );
+  }
+
+  // 3. Validate Description
   if (description !== undefined && description !== null) {
     if (typeof description !== 'string') {
       return next(new AppError('Event description must be a string.', 400, 'INVALID_DESCRIPTION'));
@@ -48,7 +59,7 @@ const validateCreateEvent = (req, res, next) => {
     }
   }
 
-  // 3. Validate Start Time
+  // 4. Validate Start Time
   if (!startTime) {
     return next(new AppError('Scheduled start time is required.', 400, 'MISSING_START_TIME'));
   }
@@ -57,7 +68,7 @@ const validateCreateEvent = (req, res, next) => {
     return next(new AppError('Scheduled start time must be a valid date/timestamp.', 400, 'INVALID_START_TIME'));
   }
 
-  // 4. Validate End Time
+  // 5. Validate End Time
   if (!endTime) {
     return next(new AppError('Scheduled end time is required.', 400, 'MISSING_END_TIME'));
   }
@@ -66,12 +77,12 @@ const validateCreateEvent = (req, res, next) => {
     return next(new AppError('Scheduled end time must be a valid date/timestamp.', 400, 'INVALID_END_TIME'));
   }
 
-  // 5. Ensure End Time is after Start Time
+  // 6. Ensure End Time is after Start Time
   if (parsedEndTime.getTime() <= parsedStartTime.getTime()) {
     return next(new AppError('Scheduled end time must be after the scheduled start time.', 400, 'INVALID_TIME_RANGE'));
   }
 
-  // 6. Validate Status if provided
+  // 7. Validate Status if provided
   if (status !== undefined) {
     if (!Object.values(EVENT_STATUS).includes(status)) {
       return next(
@@ -91,16 +102,29 @@ const validateCreateEvent = (req, res, next) => {
  * Validate Update Event Request
  */
 const validateUpdateEvent = (req, res, next) => {
-  const { name, description, startTime, endTime, status } = req.body;
+  const { name, type, description, startTime, endTime, status, isActive, password } = req.body;
 
   if (
     name === undefined &&
+    type === undefined &&
     description === undefined &&
     startTime === undefined &&
     endTime === undefined &&
-    status === undefined
+    status === undefined &&
+    isActive === undefined &&
+    password === undefined
   ) {
     return next(new AppError('At least one field must be provided for update.', 400, 'EMPTY_UPDATE'));
+  }
+
+  if (type !== undefined && !Object.values(EVENT_TYPE).includes(type)) {
+    return next(
+      new AppError(
+        `Invalid event type. Must be one of: [${Object.values(EVENT_TYPE).join(', ')}].`,
+        400,
+        'INVALID_EVENT_TYPE'
+      )
+    );
   }
 
   if (name !== undefined) {
@@ -188,7 +212,7 @@ const validateStatusUpdate = (req, res, next) => {
  * Validate query parameters for event listing
  */
 const validateEventQuery = (req, res, next) => {
-  const { status, page, limit } = req.query;
+  const { status, type, page, limit } = req.query;
 
   if (status && !Object.values(EVENT_STATUS).includes(status)) {
     return next(
@@ -196,6 +220,16 @@ const validateEventQuery = (req, res, next) => {
         `Invalid status filter. Must be one of: [${Object.values(EVENT_STATUS).join(', ')}].`,
         400,
         'INVALID_STATUS_FILTER'
+      )
+    );
+  }
+
+  if (type && !Object.values(EVENT_TYPE).includes(type)) {
+    return next(
+      new AppError(
+        `Invalid type filter. Must be one of: [${Object.values(EVENT_TYPE).join(', ')}].`,
+        400,
+        'INVALID_TYPE_FILTER'
       )
     );
   }

@@ -30,10 +30,10 @@ const AdminLayout = ({ children, title = 'Administration' }) => {
           <div className="p-5 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-mono font-bold">
-                BB
+                bT
               </div>
               <div>
-                <h1 className="text-sm font-bold tracking-wider text-slate-100">BLACKBOX</h1>
+                <h1 className="text-sm font-bold tracking-wider text-slate-100">backTrack</h1>
                 <p className="text-[10px] uppercase font-mono tracking-widest text-emerald-400">Admin Console</p>
               </div>
             </div>

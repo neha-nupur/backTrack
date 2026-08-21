@@ -10,7 +10,7 @@ const getHealthStatus = (req, res) => {
     database: getDBStatus(),
   };
 
-  return successResponse(res, 'BlackBox API is running', healthData, 200);
+  return successResponse(res, 'backTrack API is running', healthData, 200);
 };
 
 module.exports = {

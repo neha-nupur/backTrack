@@ -15,6 +15,7 @@ const ChallengeFormModal = ({
   const [inputFormat, setInputFormat] = useState('');
   const [outputFormat, setOutputFormat] = useState('');
   const [constraints, setConstraints] = useState('');
+  const [hint, setHint] = useState('');
   const [score, setScore] = useState(100);
   const [hackerRankUrl, setHackerRankUrl] = useState('');
   const [status, setStatus] = useState('ENABLED');
@@ -28,6 +29,7 @@ const ChallengeFormModal = ({
       setInputFormat(initialData.inputFormat || '');
       setOutputFormat(initialData.outputFormat || '');
       setConstraints(initialData.constraints || '');
+      setHint(initialData.hint || '');
       setScore(initialData.score !== undefined ? initialData.score : 100);
       setHackerRankUrl(initialData.hackerRankUrl || '');
       setStatus(initialData.status || 'ENABLED');
@@ -40,6 +42,7 @@ const ChallengeFormModal = ({
       setInputFormat('Standard input as string');
       setOutputFormat('Expected result as string');
       setConstraints('1 <= input.length <= 1000');
+      setHint('');
       setScore(100);
       setHackerRankUrl('');
       setStatus('ENABLED');
@@ -86,6 +89,7 @@ const ChallengeFormModal = ({
       inputFormat: inputFormat.trim(),
       outputFormat: outputFormat.trim(),
       constraints: constraints.trim(),
+      hint: hint.trim(),
       score: numericScore,
       hackerRankUrl: hackerRankUrl.trim(),
       status,
@@ -229,7 +233,7 @@ const ChallengeFormModal = ({
             </div>
           </div>
 
-          {/* Constraints & HackerRank URL */}
+          {/* Constraints & Hint */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-slate-300 mb-1 font-semibold">
@@ -247,18 +251,35 @@ const ChallengeFormModal = ({
             </div>
 
             <div>
-              <label className="block text-slate-300 mb-1 font-semibold">
-                HackerRank URL
+              <label className="block text-slate-300 mb-1 font-semibold flex items-center gap-1.5">
+                <span>💡</span>
+                <span>Hint (Participant-facing Pattern Guide)</span>
               </label>
               <input
-                type="url"
-                value={hackerRankUrl}
-                onChange={(e) => setHackerRankUrl(e.target.value)}
-                placeholder="https://www.hackerrank.com/..."
+                type="text"
+                value={hint}
+                onChange={(e) => setHint(e.target.value)}
+                placeholder="e.g. Observe the parity of the input numbers..."
                 disabled={isLoading}
+                maxLength={1000}
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-mono text-xs"
               />
             </div>
+          </div>
+
+          {/* HackerRank URL */}
+          <div>
+            <label className="block text-slate-300 mb-1 font-semibold">
+              HackerRank URL
+            </label>
+            <input
+              type="url"
+              value={hackerRankUrl}
+              onChange={(e) => setHackerRankUrl(e.target.value)}
+              placeholder="https://www.hackerrank.com/..."
+              disabled={isLoading}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition font-mono text-xs"
+            />
           </div>
 
           {/* Status */}

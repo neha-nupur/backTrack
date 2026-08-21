@@ -47,13 +47,13 @@ const LoginPage = () => {
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs font-mono text-cyan-400 mb-3">
           <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-          COLLEGE CODING EVENT PLATFORM
+          CONTEST INTERMEDIARY PLATFORM
         </div>
         <h1 className="text-3xl font-bold tracking-tight font-mono text-white">
-          BlackBox Participant Access
+          backTrack Participant Access
         </h1>
         <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto font-mono">
-          Enter your admin-registered college email and event master password to enter.
+          Enter your registered college email and master password to enter.
         </p>
       </div>
 

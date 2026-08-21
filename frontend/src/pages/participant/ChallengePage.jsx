@@ -5,13 +5,14 @@ import { getParticipantChallenges, executeChallenge } from '../../services/chall
 import { getAttempts } from '../../services/resultService';
 
 /**
- * Participant Challenge Workspace
+ * Participant backTrack Challenge Workspace
  * 
- * Displays challenges for a LIVE event and provides a secure
- * code execution interface with input/output panels.
+ * Displays challenges for a LIVE event and provides a terminal-style
+ * execution interface with input/output panels.
  * 
- * SECURITY: This component NEVER requests or displays hiddenCode.
- * Only sanitized execution results (output/error) are shown.
+ * SRS SANITIZATION & SECURITY:
+ * Strictly displays ONLY: Challenge number, Input, Run, Output, Constraints, Hint, HackerRank button.
+ * Strictly HIDES: Title, Description, Problem Statement, Score, hiddenCode, Solution, Correct Answer, Solved/Completed status.
  */
 const ChallengePage = () => {
   const { eventId } = useParams();
@@ -39,10 +40,10 @@ const ChallengePage = () => {
     try {
       const res = await getParticipantChallenges(eventId);
       if (res.success && res.data) {
-        setChallenges(res.data.challenges || []);
-        // Auto-select first challenge if none selected
-        if (!selectedChallenge && res.data.challenges?.length > 0) {
-          setSelectedChallenge(res.data.challenges[0]);
+        const fetched = res.data.challenges || [];
+        setChallenges(fetched);
+        if (!selectedChallenge && fetched.length > 0) {
+          setSelectedChallenge(fetched[0]);
         }
       }
     } catch (err) {
@@ -98,7 +99,6 @@ const ChallengePage = () => {
         const attempt = res.data.attempt;
         setExecutionResult({ ...exec, attempt });
 
-        // Add to execution history at the top
         if (attempt) {
           setExecutionHistory((prev) => [attempt, ...prev.slice(0, 19)]);
         }
@@ -135,11 +135,11 @@ const ChallengePage = () => {
             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center gap-1.5"
           >
             <span>←</span>
-            <span>Back to Dashboard</span>
+            <span>Back to Console</span>
           </button>
           <div className="hidden md:flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-xs text-emerald-400 font-bold tracking-wider">[ BLACKBOX EXECUTOR ]</span>
+            <span className="text-xs text-emerald-400 font-bold tracking-wider">[ backTrack EXECUTOR ]</span>
           </div>
         </div>
         <div className="text-xs text-slate-400 font-sans">
@@ -184,96 +184,92 @@ const ChallengePage = () => {
             </div>
           ) : (
             <div className="divide-y divide-slate-800/60">
-              {challenges.map((ch, idx) => (
-                <button
-                  key={ch.id}
-                  onClick={() => handleSelectChallenge(ch)}
-                  className={`w-full text-left p-4 hover:bg-slate-800/60 transition group ${
-                    selectedChallenge?.id === ch.id
-                      ? 'bg-slate-800 border-l-2 border-emerald-500'
-                      : 'border-l-2 border-transparent'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`text-xs font-bold mt-0.5 w-6 h-6 rounded flex items-center justify-center shrink-0 ${
-                      selectedChallenge?.id === ch.id
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'
-                    }`}>
-                      {idx + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`text-sm font-semibold truncate ${
-                        selectedChallenge?.id === ch.id ? 'text-emerald-400' : 'text-slate-200'
+              {challenges.map((ch, idx) => {
+                const challengeNum = ch.challengeNumber || (idx + 1);
+                const isSelected = selectedChallenge?.id === ch.id;
+
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => handleSelectChallenge(ch)}
+                    className={`w-full text-left p-4 hover:bg-slate-800/60 transition group ${
+                      isSelected
+                        ? 'bg-slate-800 border-l-2 border-emerald-500'
+                        : 'border-l-2 border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 ${
+                        isSelected
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'
                       }`}>
-                        {ch.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 border border-amber-900/40">
-                          {ch.score} pts
-                        </span>
+                        {challengeNum}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-sm font-semibold truncate ${
+                          isSelected ? 'text-emerald-400' : 'text-slate-200'
+                        }`}>
+                          Challenge {String(challengeNum).padStart(2, '0')}
+                        </h3>
                       </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </aside>
 
-        {/* MAIN CONTENT — Challenge Details + Execution */}
+        {/* MAIN CONTENT — Challenge Details (Constraints/Hint) + Execution */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {selectedChallenge ? (
             <>
-              {/* Challenge Description Panel */}
+              {/* Constraints & Hint Block */}
               <div className="border-b border-slate-800 p-6 bg-slate-900/40 overflow-y-auto max-h-[40vh] lg:max-h-[35vh]">
-                <div className="max-w-4xl">
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div>
-                      <h1 className="text-xl font-bold text-white">{selectedChallenge.title}</h1>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800/60 font-semibold">
-                          {selectedChallenge.score} points
-                        </span>
-                        {selectedChallenge.hackerRankUrl && (
-                          <a
-                            href={selectedChallenge.hackerRankUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                          >
-                            HackerRank ↗
-                          </a>
-                        )}
-                      </div>
+                <div className="max-w-4xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-xl font-bold text-white">
+                      Challenge {String(selectedChallenge.challengeNumber || 1).padStart(2, '0')}
+                    </h1>
+                    {selectedChallenge.hackerRankUrl && (
+                      <a
+                        href={selectedChallenge.hackerRankUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                      >
+                        <span>HackerRank</span>
+                        <span>↗</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Input Constraints */}
+                  {(selectedChallenge.inputConstraints || selectedChallenge.constraints) && (
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+                      <h4 className="text-xs font-bold text-slate-400 tracking-wide uppercase flex items-center gap-1.5">
+                        <span>📏</span>
+                        <span>INPUT CONSTRAINTS</span>
+                      </h4>
+                      <p className="text-xs text-slate-300 font-mono whitespace-pre-wrap">
+                        {selectedChallenge.inputConstraints || selectedChallenge.constraints}
+                      </p>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="text-sm text-slate-300 font-sans leading-relaxed whitespace-pre-wrap">
-                    {selectedChallenge.description}
-                  </div>
-
-                  {/* Input/Output Format & Constraints */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                    {selectedChallenge.inputFormat && (
-                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                        <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Input Format</h4>
-                        <p className="text-xs text-slate-300 font-sans whitespace-pre-wrap">{selectedChallenge.inputFormat}</p>
-                      </div>
-                    )}
-                    {selectedChallenge.outputFormat && (
-                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                        <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Output Format</h4>
-                        <p className="text-xs text-slate-300 font-sans whitespace-pre-wrap">{selectedChallenge.outputFormat}</p>
-                      </div>
-                    )}
-                    {selectedChallenge.constraints && (
-                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                        <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Constraints</h4>
-                        <p className="text-xs text-slate-300 font-sans whitespace-pre-wrap">{selectedChallenge.constraints}</p>
-                      </div>
-                    )}
-                  </div>
+                  {/* Hint Block */}
+                  {selectedChallenge.hint && (
+                    <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 shadow-lg space-y-1">
+                      <h4 className="text-xs font-bold text-indigo-400 tracking-wide uppercase flex items-center gap-1.5">
+                        <span>💡</span>
+                        <span>HINT</span>
+                      </h4>
+                      <p className="text-xs text-slate-200 font-sans leading-relaxed whitespace-pre-wrap">
+                        {selectedChallenge.hint}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -374,9 +370,6 @@ const ChallengePage = () => {
                               <span>{executionResult.error.code}</span>
                             </div>
                             <p className="text-red-300 font-sans">{executionResult.error.message}</p>
-                            {executionResult.error.details && (
-                              <p className="text-red-400/70 font-sans text-[11px]">{executionResult.error.details}</p>
-                            )}
                           </div>
                         )}
 
@@ -401,14 +394,14 @@ const ChallengePage = () => {
                 <div className="text-4xl">🎯</div>
                 <h2 className="text-lg font-bold text-slate-300">Select a Challenge</h2>
                 <p className="text-sm text-slate-500 font-sans max-w-sm">
-                  Choose a challenge from the sidebar to view its description and begin execution.
+                  Choose a challenge from the sidebar to view its constraints and begin execution.
                 </p>
               </div>
             </div>
           )}
         </main>
 
-        {/* RIGHT PANEL — Execution History (visible on large screens) */}
+        {/* RIGHT PANEL — Execution History */}
         {executionHistory.length > 0 && (
           <aside className="hidden xl:block w-72 bg-slate-900/60 border-l border-slate-800 overflow-y-auto">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -436,7 +429,6 @@ const ChallengePage = () => {
                       {new Date(entry.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 truncate font-semibold">{entry.challengeTitle}</p>
                   {entry.input && (
                     <p className="text-[10px] text-slate-500 truncate mt-0.5">
                       Input: {entry.input}
@@ -449,11 +441,6 @@ const ChallengePage = () => {
                   )}
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-[10px] text-slate-600">⏱ {entry.executionTimeMs}ms</span>
-                    {entry.isCorrect !== null && (
-                      <span className={`text-[9px] px-1 rounded ${entry.isCorrect ? 'bg-emerald-900/50 text-emerald-400' : 'bg-red-900/50 text-red-400'}`}>
-                        {entry.isCorrect ? 'CORRECT' : 'INCORRECT'}
-                      </span>
-                    )}
                   </div>
                 </div>
               ))}

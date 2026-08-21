@@ -24,19 +24,25 @@ const EventFormModal = ({
   onClose,
 }) => {
   const [name, setName] = useState('');
+  const [type, setType] = useState('CONTEST');
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [status, setStatus] = useState('UPCOMING');
+  const [isActive, setIsActive] = useState(true);
+  const [password, setPassword] = useState('');
   const [clientError, setClientError] = useState(null);
 
   useEffect(() => {
     if (initialData && mode === 'edit') {
       setName(initialData.name || '');
+      setType(initialData.type || 'CONTEST');
       setDescription(initialData.description || '');
       setStartTime(toDatetimeLocal(initialData.startTime));
       setEndTime(toDatetimeLocal(initialData.endTime));
       setStatus(initialData.status || 'UPCOMING');
+      setIsActive(initialData.isActive !== false);
+      setPassword('');
     } else {
       // Default to 1 hour from now for 2 hours duration
       const now = new Date();
@@ -44,10 +50,13 @@ const EventFormModal = ({
       const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
       setName('');
+      setType('CONTEST');
       setDescription('');
       setStartTime(toDatetimeLocal(start.toISOString()));
       setEndTime(toDatetimeLocal(end.toISOString()));
       setStatus('UPCOMING');
+      setIsActive(true);
+      setPassword('');
     }
     setClientError(null);
   }, [initialData, mode, isOpen]);
@@ -86,18 +95,26 @@ const EventFormModal = ({
       return;
     }
 
-    onSubmit({
+    const payload = {
       name: name.trim(),
+      type,
       description: description.trim(),
       startTime: startDate.toISOString(),
       endTime: endDate.toISOString(),
       status,
-    });
+      isActive,
+    };
+
+    if (password.trim()) {
+      payload.password = password.trim();
+    }
+
+    onSubmit(payload);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-xl w-full p-6 shadow-2xl space-y-6">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-xl w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <span className="text-emerald-400 font-mono">&gt;</span>
@@ -120,20 +137,36 @@ const EventFormModal = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 font-mono text-sm">
-          <div>
-            <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
-              Event Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. BlackBox Coding Challenge Spring 2026"
-              disabled={isLoading}
-              required
-              maxLength={150}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+                Event Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. backTrack Contest Spring 2026"
+                disabled={isLoading}
+                required
+                maxLength={150}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+                Event Type <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                disabled={isLoading}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              >
+                <option value="CONTEST">CONTEST Event</option>
+                <option value="DEMO">DEMO Event</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -143,7 +176,7 @@ const EventFormModal = ({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide a brief description of the competition rules or format..."
+              placeholder="Provide a brief description of the event..."
               disabled={isLoading}
               rows={2}
               maxLength={1000}
@@ -181,20 +214,53 @@ const EventFormModal = ({
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+                Lifecycle Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                disabled={isLoading}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              >
+                <option value="UPCOMING">UPCOMING</option>
+                <option value="LIVE">LIVE</option>
+                <option value="COMPLETED">COMPLETED</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+                Activation State
+              </label>
+              <select
+                value={isActive ? 'active' : 'inactive'}
+                onChange={(e) => setIsActive(e.target.value === 'active')}
+                disabled={isLoading}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              >
+                <option value="active">Active (Available to participants)</option>
+                <option value="inactive">Inactive (Deactivated)</option>
+              </select>
+            </div>
+          </div>
+
           <div>
             <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
-              Initial Status
+              Event Password (Optional Protection)
             </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === 'edit' ? 'Leave blank to keep existing password' : 'Enter common event password (optional)'}
               disabled={isLoading}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-            >
-              <option value="UPCOMING">UPCOMING (Scheduled, participants can view)</option>
-              <option value="LIVE">LIVE (Active event window)</option>
-              <option value="COMPLETED">COMPLETED (Concluded event)</option>
-            </select>
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+            />
+            <p className="text-[11px] text-slate-400 font-sans mt-1">
+              If set, participants must enter this password to unlock and join the event.
+            </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-800 font-sans">
