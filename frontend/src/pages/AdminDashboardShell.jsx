@@ -101,20 +101,20 @@ const AdminDashboardShell = () => {
           </Link>
 
           <Link
-            to="/admin/settings"
+            to="/admin/results"
             className="p-6 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl shadow-xl transition group block"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-lg bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-2xl text-amber-400">
-                🔑
+              <div className="w-12 h-12 rounded-lg bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-2xl text-cyan-400">
+                📈
               </div>
-              <span className="text-xs font-mono text-amber-400 group-hover:translate-x-1 transition">
-                Configure &rarr;
+              <span className="text-xs font-mono text-cyan-400 group-hover:translate-x-1 transition">
+                View &rarr;
               </span>
             </div>
-            <h3 className="text-base font-bold text-slate-100 mb-1">Master Password</h3>
+            <h3 className="text-base font-bold text-slate-100 mb-1">Results &amp; Statistics</h3>
             <p className="text-xs text-slate-400">
-              Update the shared event master password used by all participants to access the competition.
+              View operational statistics, participant results, and leaderboards. Export CSV data.
             </p>
           </Link>
         </div>

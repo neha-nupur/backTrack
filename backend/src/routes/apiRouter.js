@@ -3,6 +3,7 @@ const healthRoutes = require('./healthRoutes');
 const authRoutes = require('./authRoutes');
 const adminRoutes = require('./adminRoutes');
 const eventRoutes = require('./eventRoutes');
+const adminResultRoutes = require('./adminResultRoutes');
 
 const router = express.Router();
 
@@ -10,6 +11,7 @@ const router = express.Router();
 router.use('/', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin/results', adminResultRoutes);
 router.use('/events', eventRoutes);
 
 // Architectural route placeholders for future phases

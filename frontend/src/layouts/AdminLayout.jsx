@@ -16,6 +16,7 @@ const AdminLayout = ({ children, title = 'Administration' }) => {
     { label: 'Events', path: '/admin/events', icon: '🏆' },
     { label: 'Challenges', path: '/admin/events', icon: '💻' },
     { label: 'Attempts', path: '/admin/attempts', icon: '⏱️' },
+    { label: 'Results', path: '/admin/results', icon: '📈' },
     { label: 'Participants', path: '/admin/participants', icon: '👥' },
     { label: 'Settings', path: '/admin/settings', icon: '⚙️' },
   ];
