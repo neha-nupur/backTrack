@@ -13,19 +13,17 @@ import AttemptsPage from '../pages/admin/AttemptsPage';
 import ResultsPage from '../pages/admin/ResultsPage';
 import ParticipantDashboardShell from '../pages/ParticipantDashboardShell';
 import ChallengePage from '../pages/participant/ChallengePage';
+import HeroPage from '../pages/HeroPage';
 import ROLES from '../constants/roles';
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Dev Verification Endpoint */}
       <Route path="/dev" element={<DevVerificationPage />} />
 
-      {/* Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
 
-      {/* Protected Admin Routes */}
       <Route
         path="/admin/dashboard"
         element={
@@ -83,7 +81,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Protected Participant Routes */}
       <Route
         path="/participant/dashboard"
         element={
@@ -101,9 +98,8 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Default Fallback Redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<HeroPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

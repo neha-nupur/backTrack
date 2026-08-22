@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getLiveEvents, getUpcomingEvents, startEvent } from '../services/eventService';
 
 const ParticipantDashboardShell = () => {
-  const { user, logout } = useAuth();
+  const { participantUser, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'DEMO' | 'CONTEST'
   const [liveEvents, setLiveEvents] = useState([]);
@@ -12,6 +12,12 @@ const ParticipantDashboardShell = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [startStatus, setStartStatus] = useState({}); // { [eventId]: { isLoading, error, session } }
+
+  const handleLogout = async () => {
+    await logout('PARTICIPANT');
+    navigate('/login');
+  };
+
 
   // Password Modal state
   const [passwordModalEvent, setPasswordModalEvent] = useState(null);
@@ -99,7 +105,7 @@ const ParticipantDashboardShell = () => {
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-white mt-1">Participant Console</h1>
             <p className="text-xs text-slate-400 font-sans mt-0.5">
-              Logged in as <span className="text-slate-200 font-mono font-bold">{user?.name}</span> ({user?.email})
+              Logged in as <span className="text-slate-200 font-mono font-bold">{participantUser?.name}</span> ({participantUser?.email})
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -112,7 +118,7 @@ const ParticipantDashboardShell = () => {
               <span>Refresh</span>
             </button>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="px-4 py-2 bg-slate-900 hover:bg-red-950/60 text-red-400 hover:text-red-300 text-xs font-bold rounded-lg border border-slate-800 hover:border-red-800 transition"
             >
               Sign Out

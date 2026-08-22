@@ -84,7 +84,7 @@ class AdminResultsService {
     // apiClient usually expects JSON. For files we might need custom handling.
     // We can use the apiClient base URL and token directly.
     
-    const token = localStorage.getItem('blackbox_token');
+    const token = localStorage.getItem('blackbox_admin_token') || localStorage.getItem('blackbox_token');
     const baseURL = apiClient.defaults.baseURL;
     
     const response = await fetch(`${baseURL}${url}`, {

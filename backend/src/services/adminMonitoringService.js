@@ -20,9 +20,9 @@ class AdminMonitoringService {
       enabledChallenges,
       totalAttempts
     ] = await Promise.all([
-      Participant.countDocuments({ role: 'PARTICIPANT' }),
-      Participant.countDocuments({ role: 'PARTICIPANT', status: 'ACTIVE' }),
-      Participant.countDocuments({ role: 'PARTICIPANT', status: 'DISABLED' }),
+      Participant.countDocuments({}),
+      Participant.countDocuments({ status: 'ACTIVE' }),
+      Participant.countDocuments({ status: 'DISABLED' }),
       Event.countDocuments({ status: 'UPCOMING' }),
       Event.countDocuments({ status: 'LIVE' }),
       Event.countDocuments({ status: 'COMPLETED' }),

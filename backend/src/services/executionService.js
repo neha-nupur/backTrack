@@ -16,6 +16,37 @@ const Attempt = require('../models/Attempt');
 const evaluationService = require('./evaluationService');
 
 /**
+ * Qualifies whether an output represents a VALID, NON-FALLBACK execution result for a challenge.
+ */
+const qualifyOutput = (challenge, outputText) => {
+  if (!outputText) return false;
+  const clean = String(outputText).trim();
+  if (clean === '' || clean === 'null' || clean === 'undefined' || clean === 'NaN') {
+    return false;
+  }
+
+  const code = challenge.hiddenCode || '';
+  if (/\btwoSum\b/.test(code)) {
+    try {
+      const parsed = JSON.parse(clean);
+      return Array.isArray(parsed) && parsed.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  if (/\bisValid\b/.test(code)) {
+    return clean === 'true';
+  }
+
+  if (/\bsingleNumber\b/.test(code)) {
+    return !isNaN(clean) && clean !== 'NaN';
+  }
+
+  return clean !== '[]' && clean !== 'false';
+};
+
+/**
  * Execute a challenge's hidden code with participant input.
  * 
  * @param {string} participantId - The authenticated participant's ID
@@ -25,6 +56,10 @@ const evaluationService = require('./evaluationService');
  * @returns {Promise<{ attempt: object, execution: object }>}
  */
 const executeChallenge = async (participantId, eventId, challengeId, userInput = '') => {
+  if (!userInput || typeof userInput !== 'string' || userInput.trim().length === 0) {
+    throw new AppError('Please enter a valid input before executing the challenge.', 400, 'EMPTY_INPUT');
+  }
+
   const event = await Event.findById(eventId);
   if (!event) {
     throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
@@ -100,7 +135,18 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
     `success=${result.success}, time=${executionTimeMs}ms`
   );
 
-  const evaluation = evaluationService.evaluateOutput(result.output, challenge, result.success);
+  const isQualified = qualifyOutput(challenge, result.output);
+
+  const isExecutionSuccessful = Boolean(
+    result.success &&
+    result.output !== null &&
+    result.output !== undefined &&
+    String(result.output).trim().length > 0 &&
+    !result.error &&
+    isQualified
+  );
+
+  const evaluation = evaluationService.evaluateOutput(result.output, challenge, isExecutionSuccessful);
 
   let attempt;
   try {
@@ -109,16 +155,28 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
       eventId,
       challengeId,
       input: userInput,
-      output: result.output || '', // Null output replaced with empty string for DB
-      success: result.success,
+      output: result.output || '',
+      success: isExecutionSuccessful,
       isCorrect: evaluation.isCorrect,
       score: evaluation.score,
-      executionTime: executionTimeMs, // Naming consistency with existing schema field
+      executionTime: executionTimeMs,
     });
   } catch (err) {
     logger.error(`[ATTEMPT_SAVE_FAILED] Failed to save attempt: ${err.message}`);
     throw new AppError('Execution succeeded, but attempt could not be saved.', 500, 'ATTEMPT_SAVE_FAILED');
   }
+
+  const executionError = !isExecutionSuccessful && !result.error
+    ? {
+        code: 'UNQUALIFIED_OUTPUT',
+        message:
+          result.output === '[]'
+            ? 'No matching solution found for this input. Please enter valid input matching the challenge requirements.'
+            : result.output === 'false'
+            ? 'The test input evaluated to false. Enter a valid test case that satisfies the challenge requirements.'
+            : 'Execution completed but output does not meet challenge solution requirements.',
+      }
+    : result.error;
 
   return {
     attempt: {
@@ -134,9 +192,9 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
       createdAt: attempt.createdAt,
     },
     execution: {
-      success: result.success,
+      success: isExecutionSuccessful,
       output: result.output,
-      error: result.error,
+      error: executionError,
       executionTimeMs,
       challengeId,
       challengeTitle: challenge.title,

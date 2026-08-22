@@ -1,9 +1,16 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ROLES from '../constants/roles';
 
 const ProtectedRoute = ({ allowedRoles = [], children }) => {
-  const { user, role, isAuthenticated, loading } = useAuth();
+  const {
+    adminUser,
+    isAdminAuthenticated,
+    participantUser,
+    isParticipantAuthenticated,
+    loading,
+  } = useAuth();
 
   if (loading) {
     return (
@@ -16,22 +23,24 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  // Admin Route Verification
+  if (allowedRoles.includes(ROLES.ADMIN)) {
+    if (!isAdminAuthenticated || adminUser?.role !== ROLES.ADMIN) {
+      return <Navigate to="/admin/login" replace />;
+    }
+    return children;
   }
 
-  if (allowedRoles.length > 0 && (!role || !allowedRoles.includes(role))) {
-    // Redirect unauthorized user to their respective valid dashboard
-    if (role === 'ADMIN') {
-      return <Navigate to="/admin/dashboard" replace />;
+  // Participant Route Verification
+  if (allowedRoles.includes(ROLES.PARTICIPANT)) {
+    if (!isParticipantAuthenticated || participantUser?.role !== ROLES.PARTICIPANT) {
+      return <Navigate to="/login" replace />;
     }
-    if (role === 'PARTICIPANT') {
-      return <Navigate to="/participant/dashboard" replace />;
-    }
-    return <Navigate to="/login" replace />;
+    return children;
   }
 
   return children;
 };
 
 export default ProtectedRoute;
+
