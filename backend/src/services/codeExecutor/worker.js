@@ -307,6 +307,23 @@ ${code}
     const _targetFn = ${targetFnName};
     if (typeof _targetFn === 'function') {
       const _rawIn = typeof userInput !== 'undefined' ? userInput : (typeof input !== 'undefined' ? input : '');
+      const _trimmed = String(_rawIn || '').trim();
+
+      // Input Format Validation for Array/Numeric functions vs Parentheses functions
+      const _fnName = "${targetFnName}";
+      if (_fnName === 'twoSum' || _fnName === 'singleNumber') {
+        if (/[a-zA-Z]/.test(_trimmed) && !/^\s*\[.*\]\s*$/.test(_trimmed)) {
+          console.log("__INVALID_INPUT_FORMAT: Invalid Input Format: This challenge expects an array of numbers (e.g., [2, 7, 11, 15] or 4 1 2 1 2).");
+          return;
+        }
+      }
+
+      if (_fnName === 'isValid') {
+        if (/[^\(\)\[\]\{\}\s'"]/g.test(_trimmed)) {
+          console.log("__INVALID_INPUT_FORMAT: Invalid Input Format: Input must consist only of bracket characters ()[]{}.");
+          return;
+        }
+      }
 
       const _args = _parseInputToArgs(_rawIn, _targetFn.length || 1);
       let _res;

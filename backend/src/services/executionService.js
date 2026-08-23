@@ -204,6 +204,18 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
     throw new AppError('Execution succeeded, but attempt could not be saved.', 500, 'ATTEMPT_SAVE_FAILED');
   }
 
+  const executionError = !isExecutionSuccessful && !result.error
+    ? {
+        code: 'UNQUALIFIED_OUTPUT',
+        message:
+          result.output === '[]'
+            ? 'No matching solution found for this input. Please enter valid input matching the challenge requirements.'
+            : result.output === 'false'
+            ? 'The test input evaluated to false. Enter a valid test case that satisfies the challenge requirements.'
+            : 'Execution completed but output does not meet challenge solution requirements.',
+      }
+    : result.error;
+
   return {
     attempt: {
       id: attempt._id,
