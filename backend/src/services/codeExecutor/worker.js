@@ -200,6 +200,11 @@ const parseInputToArgs = (rawInput, expectedArgCount = 1) => {
  * Build executable script payload.
  * If hiddenCode defines pure function(s) without calling console.log or top-level return,
  * appends an internal auto-invocation wrapper inside the VM script itself.
+ *
+ * IMPORTANT: The wrapper code is emitted as a template literal string.
+ * Regex escaping rules inside template literals:
+ *   - `\\s` in template literal → `\s` in emitted code → regex whitespace class ✓
+ *   - `\\r?\\n` in template literal → `\r?\n` in emitted code → regex carriage return + newline ✓
  */
 const buildExecutableScript = (code) => {
   // If code explicitly uses console.log, run directly
@@ -212,12 +217,41 @@ const buildExecutableScript = (code) => {
     return '(() => {\n' + code + '\n})()';
   }
 
-  // Extract function names declared in the hiddenCode
-  const fnRegex = /(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\([^)]*\)\s*=>))/g;
+  // Extract function names declared in the hiddenCode.
+  //
+  // IMPORTANT: Backtracking solutions almost always nest a recursive helper
+  // (commonly literally named `backtrack`) *inside* the outer solve function,
+  // e.g.:
+  //   function permute(nums) {
+  //     function backtrack(path, remaining) { ... }
+  //     backtrack([], nums);
+  //     return result;
+  //   }
+  // A naive "last function name found in the text" scan matches the nested
+  // helper (it appears later in the source) instead of the real entry point.
+  // The helper isn't even reachable from the wrapper's scope (it's local to
+  // the outer function), so invoking it directly throws a ReferenceError.
+  // We therefore track brace depth and only consider function/const
+  // declarations that appear at the TOP LEVEL (depth 0) of the file as
+  // candidate entry points, ignoring anything nested inside another function.
+  const fnRegex = /(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\([^)]*\)\s*=>))|([{}])/g;
   let match;
   let targetFnName = null;
+  let depth = 0;
   while ((match = fnRegex.exec(code)) !== null) {
-    targetFnName = match[1] || match[2];
+    if (match[3] === '{') {
+      depth++;
+      continue;
+    }
+    if (match[3] === '}') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    // Only accept declarations at the top level (not nested inside another
+    // function/block) as candidates for the entry point.
+    if (depth === 0) {
+      targetFnName = match[1] || match[2];
+    }
   }
 
   if (targetFnName) {

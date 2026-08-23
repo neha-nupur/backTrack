@@ -3,6 +3,7 @@ const Event = require('../models/Event');
 const Challenge = require('../models/Challenge');
 const Attempt = require('../models/Attempt');
 const { Types } = require('mongoose');
+const { ATTEMPT_STATUS } = require('../constants/status');
 
 class AdminMonitoringService {
   /**
@@ -95,8 +96,8 @@ class AdminMonitoringService {
 
     const [totalAttempts, successExecutions, failedExecutions, challenges] = await Promise.all([
       Attempt.countDocuments({ eventId }),
-      Attempt.countDocuments({ eventId, status: 'SUCCESS' }),
-      Attempt.countDocuments({ eventId, status: { $ne: 'SUCCESS' } }),
+      Attempt.countDocuments({ eventId, status: ATTEMPT_STATUS.SUCCESS }),
+      Attempt.countDocuments({ eventId, status: { $ne: ATTEMPT_STATUS.SUCCESS } }),
       Challenge.countDocuments({ eventId })
     ]);
 
@@ -121,7 +122,14 @@ class AdminMonitoringService {
   }
 
   /**
-   * Safe serializer for attempts (ensures no internal exposure)
+   * Safe serializer for attempts (ensures no internal exposure).
+   *
+   * NOTE: `status` and `error` map directly from the Attempt document — both
+   * are now real persisted fields (see models/Attempt.js and
+   * executionService.js). `executionTimeMs` is aliased from the schema's
+   * `executionTime` field rather than renamed at the schema level, since
+   * resultService.js (participant-facing results) already depends on
+   * `executionTime` as-is.
    */
   _serializeAttempt(attempt) {
     return {
@@ -144,7 +152,7 @@ class AdminMonitoringService {
       output: attempt.output,
       error: attempt.error,
       status: attempt.status,
-      executionTimeMs: attempt.executionTimeMs,
+      executionTimeMs: attempt.executionTime,
       score: attempt.score,
       isCorrect: attempt.isCorrect,
       createdAt: attempt.createdAt

@@ -72,6 +72,7 @@ export const startEvent = async (eventId, password = null) => {
 
 export default {
   adminListEvents,
+  getAllEvents: adminListEvents,
   adminGetEventById,
   adminCreateEvent,
   adminUpdateEvent,

@@ -94,10 +94,18 @@ const ChallengePage = () => {
   }, [fetchChallenges]);
 
   // Check if output is a qualified non-fallback result
+  // NOTE: This platform is an intentional "black box" executor — it has no
+  // expected-output/test-case data to compare against, so it can never know
+  // whether an output is *correct*. It can only know whether the hidden code
+  // actually ran and returned a real result. Values like `[]`, `false`,
+  // `null`, or `NaN` are legitimate, correct outputs for plenty of
+  // algorithms (a backtracking search with no valid solutions correctly
+  // returns `[]`; a predicate correctly returns `false`). Treating them as
+  // automatic failures was rejecting correct runs. The backend's success
+  // flag already reflects whether the run genuinely produced output — trust
+  // it here instead of re-guessing based on the output's value.
   const isQualifiedOutput = (output) => {
-    if (!output) return false;
-    const clean = String(output).trim();
-    return clean !== '' && clean !== '[]' && clean !== 'false' && clean !== 'null' && clean !== 'undefined' && clean !== 'NaN';
+    return output !== null && output !== undefined && String(output).trim() !== '';
   };
 
   // Fetch attempts for selected challenge

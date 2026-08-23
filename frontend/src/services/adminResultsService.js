@@ -74,6 +74,16 @@ class AdminResultsService {
   }
 
   /**
+   * Get recent attempts for an event
+   * @param {string} eventId 
+   * @param {number} limit 
+   */
+  async getRecentAttempts(eventId, limit = 50) {
+    const response = await apiClient.get(`/admin/results/recent/${eventId}?limit=${limit}`);
+    return response.data;
+  }
+
+  /**
    * Trigger CSV download for results
    * @param {string} eventId (optional)
    */

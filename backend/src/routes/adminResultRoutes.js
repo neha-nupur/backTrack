@@ -32,4 +32,7 @@ router.get('/leaderboard/:eventId', validateEventId, adminResultController.getLe
 // Export
 router.get('/export/:eventId?', validateEventId, adminResultController.exportResults);
 
+// Recent activity
+router.get('/recent/:eventId', validateEventId, adminResultController.getRecentAttempts);
+
 module.exports = router;
