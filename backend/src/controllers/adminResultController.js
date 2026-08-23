@@ -111,6 +111,20 @@ const exportResults = async (req, res, next) => {
   }
 };
 
+/**
+ * Get recent attempts
+ */
+const getRecentAttempts = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const { limit } = req.query;
+    const attempts = await resultService.getRecentAttempts(eventId, limit ? parseInt(limit, 10) : 50);
+    return successResponse(res, 'Recent attempts retrieved successfully', attempts);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getOverallStatistics,
   getEventStatistics,
@@ -118,5 +132,6 @@ module.exports = {
   getParticipantResult,
   getChallengeStatistics,
   getLeaderboard,
-  exportResults
+  exportResults,
+  getRecentAttempts
 };

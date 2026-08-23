@@ -4,70 +4,173 @@ import apiClient from '../services/apiClient';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('blackbox_token') || null);
+  // Admin Session State
+  const [adminUser, setAdminUser] = useState(() => {
+    try {
+      const cached = localStorage.getItem('blackbox_admin_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('blackbox_admin_token') || null);
+
+  // Participant Session State
+  const [participantUser, setParticipantUser] = useState(() => {
+    try {
+      const cached = localStorage.getItem('blackbox_participant_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [participantToken, setParticipantToken] = useState(() => localStorage.getItem('blackbox_participant_token') || null);
+
   const [loading, setLoading] = useState(true);
 
-  // Restore session using GET /api/auth/me
-  const refreshUser = useCallback(async () => {
-    const currentToken = localStorage.getItem('blackbox_token');
-    if (!currentToken) {
-      setUser(null);
-      setLoading(false);
-      return;
+  // Verify and refresh both sessions independently
+  const refreshSessions = useCallback(async () => {
+    const curAdminToken = localStorage.getItem('blackbox_admin_token');
+    const curParticipantToken = localStorage.getItem('blackbox_participant_token');
+
+    const promises = [];
+
+    // Verify Admin session if token exists
+    if (curAdminToken) {
+      promises.push(
+        apiClient
+          .get('/auth/me', {
+            headers: { Authorization: `Bearer ${curAdminToken}` },
+          })
+          .then((res) => {
+            if (res?.success && res.data?.user && res.data.user.role === 'ADMIN') {
+              setAdminUser(res.data.user);
+              localStorage.setItem('blackbox_admin_user', JSON.stringify(res.data.user));
+            } else {
+              throw new Error('Invalid admin session');
+            }
+          })
+          .catch(() => {
+            localStorage.removeItem('blackbox_admin_token');
+            localStorage.removeItem('blackbox_admin_user');
+            setAdminToken(null);
+            setAdminUser(null);
+          })
+      );
+    } else {
+      setAdminUser(null);
     }
 
-    try {
-      const response = await apiClient.get('/auth/me');
-      if (response && response.success && response.data?.user) {
-        setUser(response.data.user);
-      } else {
-        throw new Error('Invalid user session response');
-      }
-    } catch (err) {
-      console.warn('Session restoration failed:', err.message || err);
-      // Clear invalid token
-      localStorage.removeItem('blackbox_token');
-      setToken(null);
-      setUser(null);
-    } finally {
-      setLoading(false);
+    // Verify Participant session if token exists
+    if (curParticipantToken) {
+      promises.push(
+        apiClient
+          .get('/auth/me', {
+            headers: { Authorization: `Bearer ${curParticipantToken}` },
+          })
+          .then((res) => {
+            if (res?.success && res.data?.user && res.data.user.role === 'PARTICIPANT') {
+              setParticipantUser(res.data.user);
+              localStorage.setItem('blackbox_participant_user', JSON.stringify(res.data.user));
+            } else {
+              throw new Error('Invalid participant session');
+            }
+          })
+          .catch(() => {
+            localStorage.removeItem('blackbox_participant_token');
+            localStorage.removeItem('blackbox_participant_user');
+            setParticipantToken(null);
+            setParticipantUser(null);
+          })
+      );
+    } else {
+      setParticipantUser(null);
     }
+
+    await Promise.allSettled(promises);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+    refreshSessions();
+  }, [refreshSessions]);
 
+  // Login handler: stores token & user into the specific role's session
   const login = (userData, authToken) => {
-    localStorage.setItem('blackbox_token', authToken);
-    setToken(authToken);
-    setUser(userData);
-  };
-
-  const logout = async () => {
-    try {
-      if (token) {
-        await apiClient.post('/auth/logout');
-      }
-    } catch (err) {
-      console.warn('Logout notification error:', err);
-    } finally {
-      localStorage.removeItem('blackbox_token');
-      setToken(null);
-      setUser(null);
+    if (userData?.role === 'ADMIN') {
+      localStorage.setItem('blackbox_admin_token', authToken);
+      localStorage.setItem('blackbox_admin_user', JSON.stringify(userData));
+      setAdminToken(authToken);
+      setAdminUser(userData);
+    } else {
+      localStorage.setItem('blackbox_participant_token', authToken);
+      localStorage.setItem('blackbox_participant_user', JSON.stringify(userData));
+      setParticipantToken(authToken);
+      setParticipantUser(userData);
     }
   };
 
+  // Role-specific logout
+  const logout = async (roleToLogout) => {
+    const isCurrentAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+    const targetRole = roleToLogout || (isCurrentAdminPath ? 'ADMIN' : 'PARTICIPANT');
+
+    if (targetRole === 'ADMIN') {
+      try {
+        if (adminToken) {
+          await apiClient.post('/auth/logout', {}, {
+            headers: { Authorization: `Bearer ${adminToken}` },
+          });
+        }
+      } catch (e) {
+        console.warn('Admin logout notification failed:', e);
+      } finally {
+        localStorage.removeItem('blackbox_admin_token');
+        localStorage.removeItem('blackbox_admin_user');
+        setAdminToken(null);
+        setAdminUser(null);
+      }
+    } else {
+      try {
+        if (participantToken) {
+          await apiClient.post('/auth/logout', {}, {
+            headers: { Authorization: `Bearer ${participantToken}` },
+          });
+        }
+      } catch (e) {
+        console.warn('Participant logout notification failed:', e);
+      } finally {
+        localStorage.removeItem('blackbox_participant_token');
+        localStorage.removeItem('blackbox_participant_user');
+        setParticipantToken(null);
+        setParticipantUser(null);
+      }
+    }
+  };
+
+  // Dynamic contextual user/token for universal components
+  const isCurrentAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const activeUser = isCurrentAdminPath ? adminUser : participantUser;
+  const activeToken = isCurrentAdminPath ? adminToken : participantToken;
+
   const value = {
-    user,
-    token,
-    role: user?.role || null,
-    isAuthenticated: !!token && !!user,
+    // Contextually resolved properties
+    user: activeUser,
+    token: activeToken,
+    role: activeUser?.role || null,
+    isAuthenticated: !!activeToken && !!activeUser,
     loading,
     login,
     logout,
-    refreshUser,
+    refreshUser: refreshSessions,
+
+    // Explicit role-separated properties
+    adminUser,
+    adminToken,
+    isAdminAuthenticated: !!adminToken && !!adminUser,
+    participantUser,
+    participantToken,
+    isParticipantAuthenticated: !!participantToken && !!participantUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -82,3 +185,4 @@ export const useAuth = () => {
 };
 
 export default AuthContext;
+

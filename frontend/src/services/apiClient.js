@@ -11,12 +11,42 @@ const apiClient = axios.create({
   },
 });
 
-// Request Interceptor: Attach JWT Token if present
+/**
+ * Resolves the appropriate JWT token based on the request endpoint or active page context.
+ * This guarantees complete session isolation between Admin and Participant portals.
+ */
+export const getActiveAuthToken = (url = '') => {
+  const adminToken = localStorage.getItem('blackbox_admin_token');
+  const participantToken = localStorage.getItem('blackbox_participant_token');
+  const legacyToken = localStorage.getItem('blackbox_token');
+
+  // Admin-specific endpoints
+  if (url.startsWith('/admin') || url.startsWith('/auth/admin')) {
+    return adminToken || legacyToken;
+  }
+
+  // Participant-specific endpoints
+  if (url.startsWith('/events') || url.startsWith('/auth/login')) {
+    return participantToken || legacyToken;
+  }
+
+  // Context-dependent endpoints (like /auth/me or /auth/logout)
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (currentPath.startsWith('/admin')) {
+    return adminToken || legacyToken || participantToken;
+  }
+
+  return participantToken || legacyToken || adminToken;
+};
+
+// Request Interceptor: Attach JWT Token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('blackbox_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!config.headers.Authorization) {
+      const token = getActiveAuthToken(config.url || '');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -42,3 +72,4 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+

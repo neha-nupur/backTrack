@@ -26,9 +26,26 @@ const CHALLENGE_STATUS = Object.freeze({
   INACTIVE: 'DISABLED',
 });
 
+/**
+ * Attempt status — reflects how a code execution attempt resolved.
+ * Persisted on the Attempt model and consumed by the admin monitoring
+ * dashboard/attempts table. Only three values are surfaced to admins:
+ * a successful run, a timeout, or any other execution error. All the
+ * more granular executor error codes (RUNTIME_ERROR, SYNTAX_ERROR,
+ * MEMORY_LIMIT_EXCEEDED, WORKER_CRASH, etc. — see codeExecutor/errors.js)
+ * collapse into EXECUTION_ERROR here; the specific code/message is still
+ * preserved in the Attempt's `error` field for the detail view.
+ */
+const ATTEMPT_STATUS = Object.freeze({
+  SUCCESS: 'SUCCESS',
+  EXECUTION_ERROR: 'EXECUTION_ERROR',
+  EXECUTION_TIMEOUT: 'EXECUTION_TIMEOUT',
+});
+
 module.exports = {
   EVENT_STATUS,
   EVENT_TYPE,
   PARTICIPANT_STATUS,
   CHALLENGE_STATUS,
+  ATTEMPT_STATUS,
 };

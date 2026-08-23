@@ -33,7 +33,7 @@ const MAX_OUTPUT_SIZE = 65536; // 64 KB
  * @param {string[]} outputBuffer - Array to capture console output lines
  * @returns {vm.Context}
  */
-const buildSandboxContext = (outputBuffer) => {
+const buildSandboxContext = (outputBuffer, cleanInput = '') => {
   let outputSize = 0;
 
   const safeConsole = {
@@ -64,9 +64,16 @@ const buildSandboxContext = (outputBuffer) => {
     },
   };
 
-  // Build the sandbox with ONLY safe globals
+  // Build the sandbox with ONLY safe globals and participant input
   const sandbox = {
     console: safeConsole,
+    userInput: Object.freeze(cleanInput),
+    input: Object.freeze(cleanInput),
+    INPUT: Object.freeze(cleanInput),
+    USER_INPUT: Object.freeze(cleanInput),
+    readLine: () => cleanInput,
+    readline: () => cleanInput,
+    read: () => cleanInput,
     // Safe built-in constructors and utilities
     Math,
     Date,
@@ -119,30 +126,274 @@ const buildSandboxContext = (outputBuffer) => {
   });
 };
 
+const BUILT_IN_GLOBALS = new Set([
+  'console', 'Math', 'Date', 'JSON', 'parseInt', 'parseFloat', 'isNaN', 'isFinite',
+  'Number', 'String', 'Boolean', 'Array', 'Object', 'Map', 'Set', 'WeakMap', 'WeakSet',
+  'Symbol', 'RegExp', 'Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError',
+  'URIError', 'EvalError', 'Promise', 'Proxy', 'Reflect', 'encodeURI', 'encodeURIComponent',
+  'decodeURI', 'decodeURIComponent', 'userInput', 'input', 'INPUT', 'USER_INPUT',
+  'readLine', 'readline', 'read'
+]);
+
+/**
+ * Parses raw input string into function arguments matching common formats:
+ * - JSON arrays/objects: e.g. [2, 7, 11, 15]
+ * - Comma-separated arguments: e.g. [2, 7, 11, 15], 9
+ * - Multi-line inputs: e.g. 2 3 4 5 \n 7
+ * - Strings, Numbers, Booleans
+ */
+const parseInputToArgs = (rawInput, expectedArgCount = 1) => {
+  const trimmed = String(rawInput || '').trim();
+  if (!trimmed) return [''];
+
+  const parseToken = (str) => {
+    const s = String(str || '').trim();
+    if (!s) return s;
+    try { return JSON.parse(s); } catch (e) {}
+    if (s.includes(' ') || s.includes(',')) {
+      const parts = s.split(/[,\\s]+/).map(p => p.trim()).filter(Boolean);
+      if (parts.length > 1 && parts.every(p => !isNaN(p))) {
+        return parts.map(Number);
+      }
+    }
+    if (!isNaN(s)) return Number(s);
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      return s.slice(1, -1);
+    }
+    return s;
+  };
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed) && expectedArgCount > 1 && parsed.length === expectedArgCount && (Array.isArray(parsed[0]) || typeof parsed[0] === 'object')) {
+      return parsed;
+    }
+    if (expectedArgCount === 1) {
+      return [parsed];
+    }
+  } catch (e) {}
+
+  try {
+    const wrapped = JSON.parse('[' + trimmed + ']');
+    if (Array.isArray(wrapped) && wrapped.length > 1) {
+      return wrapped;
+    }
+  } catch (e) {}
+
+  const lines = trimmed.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const parsedLines = lines.map(parseToken);
+    // CP format: line 1 = N (size), line 2 = array, line 3 = target
+    if (parsedLines.length === 3 && expectedArgCount === 2) {
+      if (typeof parsedLines[0] === 'number' && Array.isArray(parsedLines[1])) {
+        return [parsedLines[1], parsedLines[2]];
+      }
+    }
+    return parsedLines;
+  }
+
+  const parsedSingle = parseToken(trimmed);
+  return [parsedSingle];
+};
+
+/**
+ * Build executable script payload.
+ * If hiddenCode defines pure function(s) without calling console.log or top-level return,
+ * appends an internal auto-invocation wrapper inside the VM script itself.
+ *
+ * IMPORTANT: The wrapper code is emitted as a template literal string.
+ * Regex escaping rules inside template literals:
+ *   - `\\s` in template literal → `\s` in emitted code → regex whitespace class ✓
+ *   - `\\r?\\n` in template literal → `\r?\n` in emitted code → regex carriage return + newline ✓
+ */
+const buildExecutableScript = (code) => {
+  // If code explicitly uses console.log, run directly
+  if (/\bconsole\.log\b/.test(code)) {
+    return code;
+  }
+
+  // If top-level return is detected without function declaration, wrap in IIFE
+  if (/\breturn\b/.test(code) && !/\bfunction\b/.test(code)) {
+    return '(() => {\n' + code + '\n})()';
+  }
+
+  // Extract function names declared in the hiddenCode.
+  //
+  // IMPORTANT: Backtracking solutions almost always nest a recursive helper
+  // (commonly literally named `backtrack`) *inside* the outer solve function,
+  // e.g.:
+  //   function permute(nums) {
+  //     function backtrack(path, remaining) { ... }
+  //     backtrack([], nums);
+  //     return result;
+  //   }
+  // A naive "last function name found in the text" scan matches the nested
+  // helper (it appears later in the source) instead of the real entry point.
+  // The helper isn't even reachable from the wrapper's scope (it's local to
+  // the outer function), so invoking it directly throws a ReferenceError.
+  // We therefore track brace depth and only consider function/const
+  // declarations that appear at the TOP LEVEL (depth 0) of the file as
+  // candidate entry points, ignoring anything nested inside another function.
+  const fnRegex = /(?:function\s+([a-zA-Z0-9_$]+)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\([^)]*\)\s*=>))|([{}])/g;
+  let match;
+  let targetFnName = null;
+  let depth = 0;
+  while ((match = fnRegex.exec(code)) !== null) {
+    if (match[3] === '{') {
+      depth++;
+      continue;
+    }
+    if (match[3] === '}') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    // Only accept declarations at the top level (not nested inside another
+    // function/block) as candidates for the entry point.
+    if (depth === 0) {
+      targetFnName = match[1] || match[2];
+    }
+  }
+
+  if (targetFnName) {
+    return `
+${code}
+
+;(() => {
+  const _parseToken = (str) => {
+    const s = String(str || '').trim();
+    if (!s) return s;
+    try { return JSON.parse(s); } catch (e) {}
+    if (s.includes(' ') || s.includes(',')) {
+      const parts = s.split(/[,\\s]+/).map(p => p.trim()).filter(Boolean);
+      if (parts.length > 1 && parts.every(p => !isNaN(p))) {
+        return parts.map(Number);
+      }
+    }
+    if (!isNaN(s)) return Number(s);
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      return s.slice(1, -1);
+    }
+    return s;
+  };
+
+  const _parseInputToArgs = (rawInput, expectedArgCount = 1) => {
+    const trimmed = String(rawInput || '').trim();
+    if (!trimmed) return [''];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && expectedArgCount > 1 && parsed.length === expectedArgCount && (Array.isArray(parsed[0]) || typeof parsed[0] === 'object')) {
+        return parsed;
+      }
+      if (expectedArgCount === 1) return [parsed];
+    } catch (e) {}
+    try {
+      const wrapped = JSON.parse('[' + trimmed + ']');
+      if (Array.isArray(wrapped) && wrapped.length > 1) return wrapped;
+    } catch (e) {}
+    const lines = trimmed.split(/\\r?\\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      const parsedLines = lines.map(_parseToken);
+      if (parsedLines.length === 3 && expectedArgCount === 2) {
+        if (typeof parsedLines[0] === 'number' && Array.isArray(parsedLines[1])) {
+          return [parsedLines[1], parsedLines[2]];
+        }
+      }
+      return parsedLines;
+    }
+    return [_parseToken(trimmed)];
+  };
+
+  try {
+    const _targetFn = ${targetFnName};
+    if (typeof _targetFn === 'function') {
+      const _rawIn = typeof userInput !== 'undefined' ? userInput : (typeof input !== 'undefined' ? input : '');
+
+      const _args = _parseInputToArgs(_rawIn, _targetFn.length || 1);
+      let _res;
+      try {
+        _res = _targetFn(..._args);
+      } catch (err1) {
+        try {
+          _res = _targetFn(..._args.map(a => typeof a === 'number' ? String(a) : a));
+        } catch (err2) {
+          try {
+            _res = _targetFn(_rawIn);
+          } catch (err3) {}
+        }
+      }
+      if (_res !== undefined && _res !== null) {
+        console.log(typeof _res === 'object' ? JSON.stringify(_res) : String(_res));
+      }
+    }
+  } catch (err) {}
+})();
+`;
+  }
+
+  return code;
+};
+
 /**
  * Execute hiddenCode with userInput in the isolated VM context.
  */
 const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
   const outputBuffer = [];
-  const context = buildSandboxContext(outputBuffer);
+  const cleanInput = typeof userInput === 'string' ? userInput : String(userInput || '');
+  const context = buildSandboxContext(outputBuffer, cleanInput);
 
-  // Inject userInput as a read-only frozen string in the sandbox
-  context.userInput = Object.freeze(userInput);
+  const executableCode = buildExecutableScript(hiddenCode);
 
   try {
-    const script = new vm.Script(hiddenCode, {
+    const script = new vm.Script(executableCode, {
       filename: 'challenge.vm.js', // Safe pseudo-filename (no real path)
       timeout: timeoutMs,
     });
 
-    script.runInContext(context, {
+    const evaluatedResult = script.runInContext(context, {
       timeout: timeoutMs,
       breakOnSigint: true,
     });
 
+    // If console.log was not invoked, check evaluatedResult
+    if (outputBuffer.length === 0 && evaluatedResult !== undefined && evaluatedResult !== null) {
+      if (typeof evaluatedResult === 'object') {
+        try {
+          outputBuffer.push(JSON.stringify(evaluatedResult));
+        } catch {
+          outputBuffer.push(String(evaluatedResult));
+        }
+      } else {
+        outputBuffer.push(String(evaluatedResult));
+      }
+    }
+
+    const outputText = outputBuffer.join('\n');
+
+    if (outputText.startsWith('__INVALID_INPUT_FORMAT:')) {
+      return {
+        success: false,
+        output: '',
+        error: {
+          code: 'INVALID_INPUT_FORMAT',
+          message: outputText.replace('__INVALID_INPUT_FORMAT:', '').trim(),
+        },
+      };
+    }
+
+    if (outputText.length === 0) {
+      return {
+        success: false,
+        output: '',
+        error: {
+          code: 'NO_OUTPUT',
+          message: 'The function executed but returned no output. Please verify your input format.',
+        },
+      };
+    }
+
     return {
       success: true,
-      output: outputBuffer.join('\n'),
+      output: outputText,
       error: null,
     };
   } catch (err) {
@@ -154,7 +405,7 @@ const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
         output: outputBuffer.join('\n'),
         error: {
           code: 'EXECUTION_TIMEOUT',
-          message: 'Execution timed out.',
+          message: 'Execution timed out (infinite loop or computational limit exceeded).',
         },
       };
     }
@@ -165,14 +416,12 @@ const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
         output: outputBuffer.join('\n'),
         error: {
           code: 'SYNTAX_ERROR',
-          // Only report error type, NOT the line content (which could leak hiddenCode)
-          message: 'A syntax error occurred during execution.',
+          message: 'A syntax error occurred during execution: ' + (err.message || ''),
         },
       };
     }
 
     // Runtime errors (ReferenceError, TypeError, RangeError, etc.)
-    // Sanitize: only send error type and a truncated safe message
     const safeMessage = err.message ? String(err.message).substring(0, 200) : 'Unknown runtime error';
     
     return {
@@ -188,6 +437,11 @@ const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
 
 // ─── Worker Message Handler ─────────────────────────────────────────────────
 parentPort.on('message', (msg) => {
+  // Ignore internal Node.js dev/watch messages (e.g. { 'watch:require': [...] })
+  if (!msg || typeof msg !== 'object' || msg['watch:require']) {
+    return;
+  }
+
   const { hiddenCode, userInput, timeoutMs } = msg;
 
   if (!hiddenCode || typeof hiddenCode !== 'string') {

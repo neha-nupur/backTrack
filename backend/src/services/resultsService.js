@@ -535,6 +535,59 @@ const exportResults = async (eventId) => {
   };
 };
 
+/**
+ * Get recent attempts for an event (safe projection)
+ */
+const getRecentAttempts = async (eventId, limit = 50) => {
+  const matchStage = eventId ? { eventId: new mongoose.Types.ObjectId(eventId) } : {};
+  
+  const results = await Attempt.aggregate([
+    { $match: matchStage },
+    { $sort: { createdAt: -1 } },
+    { $limit: limit },
+    {
+      $lookup: {
+        from: 'participants',
+        localField: 'participantId',
+        foreignField: '_id',
+        as: 'participant'
+      }
+    },
+    { $unwind: '$participant' },
+    {
+      $lookup: {
+        from: 'challenges',
+        localField: 'challengeId',
+        foreignField: '_id',
+        as: 'challenge'
+      }
+    },
+    { $unwind: { path: '$challenge', preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 1,
+        participantId: 1,
+        eventId: 1,
+        challengeId: 1,
+        input: 1,
+        output: 1,
+        error: 1,
+        executionTime: 1,
+        success: 1,
+        status: 1,
+        createdAt: 1,
+        score: 1,
+        isCorrect: 1,
+        'participant.name': 1,
+        'participant.email': 1,
+        'challenge.title': 1
+      }
+    }
+  ]);
+  
+  return results;
+};
+
 module.exports = {
   getOverallStatistics,
   getEventStatistics,
@@ -542,5 +595,6 @@ module.exports = {
   getParticipantResult,
   getChallengeStatistics,
   getLeaderboard,
-  exportResults
+  exportResults,
+  getRecentAttempts
 };

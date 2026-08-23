@@ -85,14 +85,10 @@ const scanForbiddenTokens = (code) => {
  * @returns {{ valid: boolean, result?: object }}
  */
 const validateUserInput = (userInput, maxLength) => {
-  if (userInput === undefined || userInput === null) {
-    return { valid: true, sanitized: '' };
-  }
-
-  if (typeof userInput !== 'string') {
+  if (userInput === undefined || userInput === null || typeof userInput !== 'string' || userInput.trim().length === 0) {
     return {
       valid: false,
-      result: createErrorResult(EXECUTION_ERROR.INPUT_VALIDATION, 'Input must be a string.'),
+      result: createErrorResult(EXECUTION_ERROR.INPUT_VALIDATION, 'Please enter a valid input before executing.'),
     };
   }
 

@@ -3,13 +3,14 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = ({ children, title = 'Administration' }) => {
-  const { user, logout } = useAuth();
+  const { adminUser, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
+    await logout('ADMIN');
     navigate('/admin/login');
   };
+
 
   const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard', icon: '📊' },
@@ -64,8 +65,8 @@ const AdminLayout = ({ children, title = 'Administration' }) => {
         <div className="p-4 border-t border-slate-800 bg-slate-900/60">
           <div className="flex items-center justify-between mb-3">
             <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-slate-200 truncate">{user?.name || 'Admin'}</p>
-              <p className="text-[10px] text-slate-500 truncate">{user?.email || 'admin@college.edu'}</p>
+              <p className="text-xs font-semibold text-slate-200 truncate">{adminUser?.name || 'Admin'}</p>
+              <p className="text-[10px] text-slate-500 truncate">{adminUser?.email || 'admin@college.edu'}</p>
             </div>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
               ADMIN
