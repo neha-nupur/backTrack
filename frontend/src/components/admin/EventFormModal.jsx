@@ -275,7 +275,7 @@ const EventFormModal = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40 transition disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2.5 text-xs font-mono font-bold rounded-xl bg-gradient-to-r from-[#0066ff] to-[#00c2ff] hover:from-[#0055ee] hover:to-[#00b0ee] text-white shadow-[0_0_20px_rgba(0,140,255,0.4)] transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
             >
               {isLoading && (
                 <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">

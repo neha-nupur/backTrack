@@ -63,13 +63,13 @@ const AttemptsPage = () => {
     <AdminLayout title="Operational Monitoring: Attempts">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header & Filters */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#071324]/85 border border-slate-800/90 p-5 rounded-2xl shadow-xl">
           <div>
-            <h2 className="text-lg font-bold text-slate-100">
+            <h2 className="text-lg font-bold text-white font-mono">
               Attempt History
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Total Records: {totalRecords}
+            <p className="text-xs text-slate-400 mt-1 font-sans">
+              Total Records: <span className="text-cyan-400 font-mono font-bold">{totalRecords}</span>
             </p>
           </div>
 
@@ -80,7 +80,7 @@ const AttemptsPage = () => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-emerald-500/50 w-full sm:w-auto"
+              className="px-3.5 py-2 bg-[#030914] border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-cyan-500 w-full sm:w-auto font-mono"
             >
               <option value="">All Statuses</option>
               <option value="SUCCESS">Success</option>
@@ -89,9 +89,9 @@ const AttemptsPage = () => {
             </select>
             <button
               onClick={fetchAttempts}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition whitespace-nowrap"
+              className="px-4 py-2 bg-[#091a32] hover:bg-[#0e274c] text-cyan-300 border border-slate-700/60 rounded-xl text-xs font-mono font-semibold transition cursor-pointer whitespace-nowrap"
             >
-              Refresh
+              🔄 Refresh
             </button>
           </div>
         </div>
@@ -103,33 +103,33 @@ const AttemptsPage = () => {
         )}
 
         {/* Table */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden">
+        <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl shadow-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-950/50 text-xs uppercase text-slate-500 border-b border-slate-800">
+              <thead className="bg-[#030914]/80 text-xs uppercase text-slate-400 border-b border-slate-800 font-mono">
                 <tr>
-                  <th className="px-4 py-3">Time</th>
-                  <th className="px-4 py-3">Participant</th>
-                  <th className="px-4 py-3">Event / Challenge</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Action</th>
+                  <th className="px-5 py-3.5">Time</th>
+                  <th className="px-5 py-3.5">Participant</th>
+                  <th className="px-5 py-3.5">Event / Challenge</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-800/60 font-mono">
                 {loading ? (
                   <tr>
                     <td
                       colSpan="5"
-                      className="px-4 py-8 text-center text-slate-500 font-mono text-xs"
+                      className="px-4 py-12 text-center text-slate-500 font-mono text-xs"
                     >
-                      Loading...
+                      Loading attempts...
                     </td>
                   </tr>
                 ) : attempts.length === 0 ? (
                   <tr>
                     <td
                       colSpan="5"
-                      className="px-4 py-8 text-center text-slate-500 font-mono text-xs"
+                      className="px-4 py-12 text-center text-slate-500 font-mono text-xs"
                     >
                       No attempts recorded yet.
                     </td>
@@ -138,50 +138,50 @@ const AttemptsPage = () => {
                   attempts.map((attempt) => (
                     <tr
                       key={attempt.id}
-                      className="hover:bg-slate-800/40 transition"
+                      className="hover:bg-[#0a1c35]/50 transition"
                     >
-                      <td className="px-4 py-3 whitespace-nowrap text-xs">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-xs text-slate-400">
                         {new Date(attempt.createdAt).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm font-semibold text-slate-200">
+                      <td className="px-5 py-3.5">
+                        <div className="text-sm font-semibold text-slate-100">
                           {attempt.participant?.name || "Unknown"}
                         </div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-[10px] text-slate-400 font-sans">
                           {attempt.participant?.email}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <div
-                          className="text-sm text-slate-300 truncate max-w-[200px]"
+                          className="text-sm text-slate-200 truncate max-w-[200px]"
                           title={attempt.event?.name}
                         >
                           {attempt.event?.name || "Unknown Event"}
                         </div>
-                        <div className="text-[10px] text-indigo-400">
+                        <div className="text-[10px] text-cyan-400">
                           {attempt.challenge
                             ? `Challenge ${attempt.challenge.challengeNumber}`
                             : "N/A"}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
                             attempt.status === "SUCCESS"
-                              ? "bg-emerald-900/50 text-emerald-400"
-                              : "bg-red-900/50 text-red-400"
+                              ? "bg-cyan-950 text-cyan-300 border border-cyan-700/60"
+                              : "bg-red-950 text-red-400 border border-red-800/60"
                           }`}
                         >
                           {attempt.status}
                         </span>
-                        <div className="text-[10px] text-slate-500 mt-1">
-                          {attempt.executionTimeMs}ms
+                        <div className="text-[10px] text-slate-400 mt-1">
+                          ⏱ {attempt.executionTimeMs}ms
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         <button
                           onClick={() => setSelectedAttempt(attempt)}
-                          className="px-3 py-1.5 bg-slate-800 hover:bg-indigo-600 hover:text-white text-indigo-400 rounded transition text-xs font-semibold"
+                          className="px-3.5 py-1.5 bg-[#091a32] hover:bg-[#0e274c] text-cyan-300 border border-slate-700/60 rounded-xl transition text-xs font-semibold cursor-pointer"
                         >
                           View
                         </button>

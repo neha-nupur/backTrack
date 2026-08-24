@@ -7,6 +7,13 @@
   --color-brand-gold-light: #e8c872;
   --color-brand-gold-dark: #a67f3a;
 
+  --color-cyber-bg: #040914;
+  --color-cyber-card: #091224;
+  --color-cyber-border: #132746;
+  --color-cyber-blue: #00a2ff;
+  --color-cyber-cyan: #00f0ff;
+  --color-cyber-neon: #0070f3;
+
   --font-label-mono: "JetBrains Mono", monospace;
   --font-display: "Geist", sans-serif;
 }
@@ -14,6 +21,8 @@
 @layer base {
   body {
     font-family: "Inter", sans-serif;
+    background-color: #030712;
+    color: #e2e8f0;
   }
 
   code,
@@ -21,37 +30,201 @@
   .font-mono {
     font-family: "Fira Code", monospace;
   }
+
+  /* Prevent browser autofill from turning inputs white/yellow/blue */
+  input,
+  textarea,
+  select {
+    color-scheme: dark !important;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #050b16 inset !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
+    caret-color: #38bdf8 !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
 }
 
 @layer utilities {
   .glowing-text {
     text-shadow:
-      0 0 20px rgba(200, 159, 83, 0.5),
-      0 0 40px rgba(232, 200, 114, 0.3);
+      0 0 12px rgba(56, 189, 248, 0.4),
+      0 0 24px rgba(14, 165, 233, 0.25);
   }
 
-  /* Cinematic Background */
+  .glowing-text-gold {
+    text-shadow:
+      0 0 15px rgba(200, 159, 83, 0.4),
+      0 0 30px rgba(232, 200, 114, 0.2);
+  }
+
+  /* Cyber HUD / Sci-Fi Glows & Cards - Deep Muted Blues */
+  .cyber-glow-blue {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), inset 0 0 12px rgba(14, 165, 233, 0.04);
+  }
+
+  .cyber-button-glow {
+    box-shadow: 0 0 18px rgba(37, 99, 235, 0.35), 0 0 36px rgba(14, 165, 233, 0.15);
+  }
+
+  .cyber-card {
+    background: linear-gradient(180deg, rgba(8, 16, 31, 0.88) 0%, rgba(4, 9, 18, 0.95) 100%);
+    border: 1px solid rgba(22, 43, 77, 0.7);
+    backdrop-filter: blur(16px);
+  }
+
+  /* Cinematic Deep Dark Background */
   .cinematic-bg {
-    background-color: #0b1221;
+    background-color: #030712;
     background-image:
       radial-gradient(
-        circle at 50% 0%,
-        rgba(200, 159, 83, 0.15) 0%,
-        transparent 50%
+        circle at 50% 10%,
+        rgba(14, 116, 144, 0.08) 0%,
+        transparent 55%
       ),
       radial-gradient(
-        circle at 50% 100%,
-        rgba(232, 200, 114, 0.1) 0%,
-        transparent 50%
+        circle at 50% 90%,
+        rgba(30, 58, 138, 0.06) 0%,
+        transparent 55%
       );
   }
 
   /* Grid Texture */
   .tech-grid {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 30px 30px;
+      linear-gradient(rgba(56, 189, 248, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56, 189, 248, 0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Running Square Trace & Cyber Animations */
+  @keyframes line-run-h {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes line-run-v {
+    0% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes binary-stream {
+    0% {
+      transform: translateY(0);
+      opacity: 0.15;
+    }
+    50% {
+      opacity: 0.25;
+    }
+    100% {
+      transform: translateY(-50%);
+      opacity: 0.15;
+    }
+  }
+
+  @keyframes cyber-scan {
+    0% {
+      top: 0%;
+      opacity: 0;
+    }
+    20% {
+      opacity: 0.8;
+    }
+    80% {
+      opacity: 0.8;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+
+  /* Laser Trace Line Running Along Square Perimeters */
+  @keyframes trace-square-1 {
+    0% {
+      stroke-dashoffset: 700;
+      opacity: 0.1;
+    }
+    30% {
+      opacity: 0.55;
+    }
+    70% {
+      opacity: 0.55;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0.1;
+    }
+  }
+
+  @keyframes trace-square-2 {
+    0% {
+      stroke-dashoffset: -800;
+      opacity: 0.1;
+    }
+    40% {
+      opacity: 0.5;
+    }
+    80% {
+      opacity: 0.5;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0.1;
+    }
+  }
+
+  .animate-square-trace-1 {
+    stroke-dasharray: 40 120;
+    animation: trace-square-1 7s linear infinite;
+  }
+
+  .animate-square-trace-2 {
+    stroke-dasharray: 50 140;
+    animation: trace-square-2 10s linear infinite;
+  }
+
+  .animate-square-trace-3 {
+    stroke-dasharray: 30 100;
+    animation: trace-square-1 5.5s linear infinite;
+  }
+
+  .animate-binary {
+    animation: binary-stream 20s linear infinite;
+  }
+
+  .animate-line-h {
+    animation: line-run-h 4s ease-in-out infinite;
+  }
+
+  .animate-line-v {
+    animation: line-run-v 4s ease-in-out infinite;
+  }
+
+  .animate-cyber-scan {
+    animation: cyber-scan 5s ease-in-out infinite;
   }
 
   /* Animations */
@@ -61,7 +234,7 @@
       transform: translateY(0);
     }
     50% {
-      transform: translateY(-10px);
+      transform: translateY(-8px);
     }
   }
   .animate-float {
@@ -71,18 +244,18 @@
   @keyframes pulse-glow {
     0%,
     100% {
-      opacity: 0.5;
+      opacity: 0.3;
       transform: scale(1);
     }
     50% {
-      opacity: 0.8;
-      transform: scale(1.05);
+      opacity: 0.5;
+      transform: scale(1.03);
     }
   }
   .ambient-glow {
     position: absolute;
     border-radius: 50%;
-    filter: blur(60px);
+    filter: blur(70px);
     z-index: -1;
     animation: pulse-glow 8s ease-in-out infinite;
   }

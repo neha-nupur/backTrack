@@ -154,12 +154,12 @@ const ResultsPage = () => {
   return (
     <AdminLayout title="Results & Statistics">
       <div className="space-y-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-5">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 font-mono tracking-tight">
+            <h1 className="text-2xl font-bold text-white font-mono tracking-tight">
               RESULTS &amp; STATISTICS
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-400 text-xs mt-1 font-sans">
               Operational view of event activity and attempts
             </p>
           </div>
@@ -171,7 +171,7 @@ const ResultsPage = () => {
                 setPage(1);
                 setSearchTerm("");
               }}
-              className="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 outline-none font-mono"
+              className="bg-[#030914] border border-slate-800 text-slate-200 text-xs sm:text-sm rounded-xl focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 outline-none font-mono"
             >
               <option value="">-- All Events (Overview) --</option>
               {events.length === 0 ? (
@@ -192,14 +192,14 @@ const ResultsPage = () => {
             {selectedEventId && (
               <button
                 onClick={handleManualRefresh}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-sm font-mono transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-[#091a32] hover:bg-[#0e274c] text-cyan-300 border border-slate-700/60 rounded-xl text-xs font-mono font-semibold transition cursor-pointer whitespace-nowrap"
               >
-                Refresh
+                🔄 Refresh
               </button>
             )}
             <button
               onClick={handleExport}
-              className="px-4 py-2 bg-emerald-600/20 text-emerald-400 border border-emerald-700/50 hover:bg-emerald-600/40 rounded-lg text-sm font-mono transition-colors whitespace-nowrap"
+              className="px-4 py-2 bg-gradient-to-r from-blue-700 to-cyan-600 hover:from-blue-600 hover:to-cyan-500 text-white rounded-xl text-xs font-mono font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition cursor-pointer whitespace-nowrap"
             >
               Export CSV
             </button>
@@ -241,18 +241,18 @@ const ResultsPage = () => {
 
         {/* OVERVIEW STATS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="text-xs text-slate-400 font-mono mb-1">
+          <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl p-5 shadow-xl">
+            <div className="text-[10px] text-slate-400 font-mono mb-1 tracking-widest uppercase">
               PARTICIPANTS
             </div>
-            <div className="text-2xl font-bold text-white mb-2">
+            <div className="text-2xl font-bold text-white mb-2 font-mono">
               {selectedEventId
                 ? eventStats?.execution?.uniqueParticipants || 0
                 : overview?.participants?.total || 0}
             </div>
             {!selectedEventId && (
-              <div className="flex gap-2 text-xs">
-                <span className="text-emerald-400">
+              <div className="flex gap-2 text-xs font-mono">
+                <span className="text-cyan-400">
                   {overview?.participants?.active || 0} Active
                 </span>
                 <span className="text-slate-500">•</span>
@@ -263,57 +263,47 @@ const ResultsPage = () => {
             )}
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="text-xs text-slate-400 font-mono mb-1">
+          <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl p-5 shadow-xl">
+            <div className="text-[10px] text-slate-400 font-mono mb-1 tracking-widest uppercase">
               CHALLENGES
             </div>
-            <div className="text-2xl font-bold text-white mb-2">
+            <div className="text-2xl font-bold text-white mb-2 font-mono">
               {selectedEventId
                 ? eventStats?.challengeCount || 0
                 : overview?.challenges?.total || 0}
             </div>
             {!selectedEventId && (
-              <div className="flex gap-2 text-xs">
-                <span className="text-emerald-400">
+              <div className="flex gap-2 text-xs font-mono">
+                <span className="text-cyan-400">
                   {overview?.challenges?.enabled || 0} Enabled
                 </span>
               </div>
             )}
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="text-xs text-slate-400 font-mono mb-1">
+          <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl p-5 shadow-xl">
+            <div className="text-[10px] text-slate-400 font-mono mb-1 tracking-widest uppercase">
               ATTEMPTS
             </div>
-            <div className="text-2xl font-bold text-white mb-2">
+            <div className="text-2xl font-bold text-white mb-2 font-mono">
               {selectedEventId
                 ? eventStats?.execution?.totalAttempts || 0
                 : overview?.attempts?.total || 0}
             </div>
-            <div className="text-xs text-slate-400">Total Code Executions</div>
+            <div className="text-xs text-slate-400 font-sans">Total Code Executions</div>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="text-xs text-slate-400 font-mono mb-1">
+          <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl p-5 shadow-xl">
+            <div className="text-[10px] text-slate-400 font-mono mb-1 tracking-widest uppercase">
               EXECUTIONS
             </div>
-            <div className="flex gap-4 text-sm mt-2">
-              <div>
-                <div className="text-emerald-400 font-bold">
-                  {selectedEventId
-                    ? eventStats?.execution?.successfulExecutions || 0
-                    : overview?.attempts?.successful || 0}
-                </div>
-                <div className="text-xs text-slate-500">Success</div>
-              </div>
-              <div>
-                <div className="text-rose-400 font-bold">
-                  {selectedEventId
-                    ? eventStats?.execution?.failedExecutions || 0
-                    : overview?.attempts?.failed || 0}
-                </div>
-                <div className="text-xs text-slate-500">Failed</div>
-              </div>
+            <div className="flex gap-4 text-xs font-mono mt-2">
+              <span className="text-cyan-400">
+                ✓ {selectedEventId ? eventStats?.execution?.successfulRuns || 0 : overview?.attempts?.successful || 0} Success
+              </span>
+              <span className="text-rose-400">
+                ✗ {selectedEventId ? eventStats?.execution?.failedRuns || 0 : overview?.attempts?.failed || 0} Failed
+              </span>
             </div>
           </div>
         </div>

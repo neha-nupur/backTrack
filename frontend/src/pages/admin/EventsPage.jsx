@@ -141,21 +141,21 @@ const EventsPage = () => {
     switch (status) {
       case 'LIVE':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800/60 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
             LIVE
           </span>
         );
       case 'UPCOMING':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-amber-950 text-amber-400 border border-amber-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-950 text-blue-400 border border-blue-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
             UPCOMING
           </span>
         );
       case 'COMPLETED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-slate-900 text-slate-400 border border-slate-700">
             <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
             COMPLETED
           </span>
@@ -171,14 +171,14 @@ const EventsPage = () => {
         {/* Header Action Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Events</h1>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h1 className="text-2xl font-bold text-white tracking-tight font-mono">Events</h1>
+            <p className="text-xs text-slate-400 mt-1 font-sans">
               Create and manage coding competitions, schedule event windows, and control live status.
             </p>
           </div>
           <button
             onClick={handleOpenCreateModal}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow-lg shadow-emerald-900/40 transition shrink-0"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-700 to-cyan-600 hover:from-blue-600 hover:to-cyan-500 text-white rounded-xl text-xs font-mono font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition shrink-0 cursor-pointer"
           >
             <span className="text-base font-bold">+</span>
             <span>Create Event</span>
@@ -187,24 +187,24 @@ const EventsPage = () => {
 
         {/* Alerts */}
         {successMessage && (
-          <div className="p-4 bg-emerald-950/60 border border-emerald-700/60 rounded-xl text-emerald-300 text-sm flex items-center justify-between animate-fadeIn">
+          <div className="p-4 bg-cyan-950/40 border border-cyan-700/60 rounded-2xl text-cyan-300 text-sm flex items-center justify-between animate-fadeIn shadow-lg">
             <div className="flex items-center gap-2">
               <span>✅</span>
               <span>{successMessage}</span>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-white">✕</button>
+            <button onClick={() => setSuccessMessage(null)} className="text-cyan-400 hover:text-white cursor-pointer">✕</button>
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-red-950/60 border border-red-800 rounded-xl text-red-300 text-sm flex items-center justify-between animate-fadeIn">
+          <div className="p-4 bg-red-950/40 border border-red-800 rounded-2xl text-red-300 text-sm flex items-center justify-between animate-fadeIn shadow-lg">
             <div className="flex items-center gap-2">
               <span>⚠️</span>
               <span>{error}</span>
             </div>
             <button
               onClick={() => fetchEvents(pagination.page)}
-              className="px-3 py-1 bg-red-900 hover:bg-red-800 text-white text-xs font-semibold rounded"
+              className="px-3 py-1 bg-red-900 hover:bg-red-800 text-white text-xs font-semibold rounded cursor-pointer"
             >
               Retry
             </button>
@@ -212,29 +212,29 @@ const EventsPage = () => {
         )}
 
         {/* Filter Controls */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
           <form onSubmit={handleSearchSubmit} className="flex-1 flex gap-2 w-full md:w-auto">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search events by name..."
-              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition font-mono"
+              className="flex-1 bg-[#030914] border border-slate-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500/70 transition font-mono"
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-lg transition"
+              className="px-4 py-2 bg-[#091a32] hover:bg-[#0e274c] text-cyan-300 border border-slate-700/60 rounded-xl text-xs font-mono font-semibold transition cursor-pointer"
             >
               Search
             </button>
           </form>
 
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            <label className="text-xs text-slate-400 font-medium">Status:</label>
+            <label className="text-xs text-slate-400 font-medium font-mono">Status:</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition"
+              className="bg-[#030914] border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition font-mono"
             >
               <option value="">All Statuses</option>
               <option value="UPCOMING">UPCOMING only</option>
@@ -245,7 +245,7 @@ const EventsPage = () => {
         </div>
 
         {/* Events Table / State Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl">
           {isLoading ? (
             <div className="p-12 text-center text-slate-400 space-y-3 font-mono">
               <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>

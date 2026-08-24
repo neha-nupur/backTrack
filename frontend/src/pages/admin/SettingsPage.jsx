@@ -53,20 +53,21 @@ const SettingsPage = () => {
     <AdminLayout title="System Settings">
       <div className="max-w-3xl mx-auto space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">System Settings</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h1 className="text-2xl font-bold text-white tracking-tight font-mono">System Settings</h1>
+          <p className="text-xs text-slate-400 mt-1 font-sans">
             Configure system-wide event access credentials and platform parameters.
           </p>
         </div>
 
         {/* Master Password Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
-          <div className="border-b border-slate-800 pb-4">
-            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              <span className="text-emerald-400 font-mono">🔑</span>
+        <div className="bg-[#071324]/85 border border-slate-800/90 rounded-2xl p-6 shadow-xl space-y-6"
+             style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(56, 189, 248, 0.08)' }}>
+          <div className="border-b border-slate-800/70 pb-4">
+            <h2 className="text-base font-bold text-white flex items-center gap-2 font-mono">
+              <span className="text-cyan-400">🔑</span>
               <span>EVENT ACCESS PASSWORD</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 font-sans">
               Participants use this shared master password together with their registered college email to enter the event.
               Updating this password takes effect immediately for all subsequent participant login attempts.
             </p>
@@ -74,29 +75,29 @@ const SettingsPage = () => {
 
           {/* Success Banner */}
           {successMessage && (
-            <div className="p-4 bg-emerald-950/60 border border-emerald-700/60 rounded-xl text-emerald-300 text-sm flex items-center justify-between animate-fadeIn">
+            <div className="p-4 bg-cyan-950/40 border border-cyan-700/60 rounded-2xl text-cyan-300 text-sm flex items-center justify-between animate-fadeIn shadow-lg">
               <div className="flex items-center gap-2">
                 <span>✅</span>
                 <span>{successMessage}</span>
               </div>
-              <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-white">✕</button>
+              <button onClick={() => setSuccessMessage(null)} className="text-cyan-400 hover:text-white cursor-pointer">✕</button>
             </div>
           )}
 
           {/* Error Banner */}
           {error && (
-            <div className="p-4 bg-red-950/60 border border-red-800 rounded-xl text-red-300 text-sm flex items-center justify-between animate-fadeIn">
+            <div className="p-4 bg-red-950/40 border border-red-800 rounded-2xl text-red-300 text-sm flex items-center justify-between animate-fadeIn shadow-lg">
               <div className="flex items-center gap-2">
                 <span>⚠️</span>
                 <span>{error}</span>
               </div>
-              <button onClick={() => setError(null)} className="text-red-400 hover:text-white">✕</button>
+              <button onClick={() => setError(null)} className="text-red-400 hover:text-white cursor-pointer">✕</button>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5 font-mono text-sm">
             <div>
-              <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+              <label className="block text-slate-300 mb-1.5 font-sans text-xs font-semibold">
                 Current Master Password <span className="text-red-400">*</span>
               </label>
               <input
@@ -106,13 +107,13 @@ const SettingsPage = () => {
                 placeholder="Enter current master password..."
                 disabled={isLoading}
                 required
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                className="w-full bg-[#030914] border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition disabled:opacity-50 text-xs sm:text-sm"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+                <label className="block text-slate-300 mb-1.5 font-sans text-xs font-semibold">
                   New Master Password <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -123,12 +124,12 @@ const SettingsPage = () => {
                   disabled={isLoading}
                   required
                   minLength={8}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="w-full bg-[#030914] border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition disabled:opacity-50 text-xs sm:text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 mb-1 font-sans text-sm font-semibold">
+                <label className="block text-slate-300 mb-1.5 font-sans text-xs font-semibold">
                   Confirm New Password <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -139,13 +140,13 @@ const SettingsPage = () => {
                   disabled={isLoading}
                   required
                   minLength={8}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="w-full bg-[#030914] border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition disabled:opacity-50 text-xs sm:text-sm"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg font-sans text-xs text-slate-400 space-y-1">
-              <p className="font-semibold text-slate-300">Security Notes:</p>
+            <div className="p-3.5 bg-[#030914] border border-slate-800 rounded-xl font-sans text-xs text-slate-400 space-y-1">
+              <p className="font-semibold text-slate-300 font-mono">Security Notes:</p>
               <ul className="list-disc list-inside space-y-0.5 text-slate-400">
                 <li>Existing participant accounts and records are preserved.</li>
                 <li>Active participant sessions remain valid until their JWT expires.</li>
@@ -157,7 +158,7 @@ const SettingsPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-emerald-900/40 transition disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-700 to-cyan-600 hover:from-blue-600 hover:to-cyan-500 text-white text-xs font-mono font-bold rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.3)] transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               >
                 {isLoading && (
                   <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">

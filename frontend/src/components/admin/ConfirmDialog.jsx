@@ -35,10 +35,10 @@ const ConfirmDialog = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg text-white transition disabled:opacity-50 flex items-center gap-2 ${
+            className={`px-5 py-2.5 text-xs font-mono font-bold rounded-xl text-white transition disabled:opacity-50 flex items-center gap-2 cursor-pointer ${
               isDanger
                 ? 'bg-red-600 hover:bg-red-500 shadow-lg shadow-red-900/40'
-                : 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/40'
+                : 'bg-gradient-to-r from-[#0066ff] to-[#00c2ff] hover:from-[#0055ee] hover:to-[#00b0ee] shadow-[0_0_20px_rgba(0,140,255,0.4)]'
             }`}
           >
             {isLoading && (
