@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import AdminLayout from '../layouts/AdminLayout';
-import { useAuth } from '../context/AuthContext';
-import { getDashboardStats } from '../services/adminMonitoringService';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import AdminLayout from "../layouts/AdminLayout";
+import { useAuth } from "../context/AuthContext";
+import { getDashboardStats } from "../services/adminMonitoringService";
 
 const AdminDashboardShell = () => {
   const { user } = useAuth();
@@ -17,7 +17,7 @@ const AdminDashboardShell = () => {
           setStats(res.data);
         }
       } catch (err) {
-        console.error('Failed to load stats', err);
+        console.error("Failed to load stats", err);
       } finally {
         setLoading(false);
       }
@@ -30,35 +30,67 @@ const AdminDashboardShell = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">backTrack Admin Console</h1>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
+              backTrack Admin Console
+            </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Welcome back, {user?.name || 'Administrator'}. Manage platform configuration and monitor activity.
+              Welcome back, {user?.name || "Administrator"}. Manage platform
+              configuration and monitor activity.
             </p>
           </div>
-          <button onClick={() => window.location.reload()} className="px-3 py-1 bg-slate-800 text-xs rounded text-slate-300 hover:bg-slate-700">Refresh Data</button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-3 py-1 bg-slate-800 text-xs rounded text-slate-300 hover:bg-slate-700"
+          >
+            Refresh Data
+          </button>
         </div>
 
         {/* Real Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
-            <span className="text-xs font-mono text-slate-500">Participants</span>
-            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.participants?.total || 0}</span>
-            <span className="text-[10px] text-emerald-400">{loading ? '' : `${stats?.participants?.active || 0} active`}</span>
+            <span className="text-xs font-mono text-slate-500">
+              Participants
+            </span>
+            <span className="text-2xl font-bold text-slate-100">
+              {loading ? "..." : stats?.participants?.total || 0}
+            </span>
+            <span className="text-[10px] text-emerald-400">
+              {loading ? "" : `${stats?.participants?.active || 0} active`}
+            </span>
           </div>
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
-            <span className="text-xs font-mono text-slate-500">Events (Live)</span>
-            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.events?.live || 0}</span>
-            <span className="text-[10px] text-indigo-400">{loading ? '' : `${stats?.events?.total || (stats?.events?.upcoming + stats?.events?.live + stats?.events?.completed) || 0} total events`}</span>
+            <span className="text-xs font-mono text-slate-500">
+              Events (Live)
+            </span>
+            <span className="text-2xl font-bold text-slate-100">
+              {loading ? "..." : stats?.events?.live || 0}
+            </span>
+            <span className="text-[10px] text-indigo-400">
+              {loading
+                ? ""
+                : `${stats?.events?.total || stats?.events?.upcoming + stats?.events?.live + stats?.events?.completed || 0} total events`}
+            </span>
           </div>
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
             <span className="text-xs font-mono text-slate-500">Challenges</span>
-            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.challenges?.total || 0}</span>
-            <span className="text-[10px] text-emerald-400">{loading ? '' : `${stats?.challenges?.enabled || 0} enabled`}</span>
+            <span className="text-2xl font-bold text-slate-100">
+              {loading ? "..." : stats?.challenges?.total || 0}
+            </span>
+            <span className="text-[10px] text-emerald-400">
+              {loading ? "" : `${stats?.challenges?.enabled || 0} enabled`}
+            </span>
           </div>
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between">
-            <span className="text-xs font-mono text-slate-500">Total Attempts</span>
-            <span className="text-2xl font-bold text-slate-100">{loading ? '...' : stats?.attempts?.total || 0}</span>
-            <span className="text-[10px] text-amber-400">Recorded executions</span>
+            <span className="text-xs font-mono text-slate-500">
+              Total Attempts
+            </span>
+            <span className="text-2xl font-bold text-slate-100">
+              {loading ? "..." : stats?.attempts?.total || 0}
+            </span>
+            <span className="text-[10px] text-amber-400">
+              Recorded executions
+            </span>
           </div>
         </div>
 
@@ -78,7 +110,8 @@ const AdminDashboardShell = () => {
             </div>
             <h3 className="text-base font-bold text-slate-100 mb-1">Events</h3>
             <p className="text-xs text-slate-400">
-              Schedule competitions, set start/end times, and control live event status.
+              Schedule competitions, set start/end times, and control live event
+              status.
             </p>
           </Link>
 
@@ -94,9 +127,12 @@ const AdminDashboardShell = () => {
                 Manage &rarr;
               </span>
             </div>
-            <h3 className="text-base font-bold text-slate-100 mb-1">Participants</h3>
+            <h3 className="text-base font-bold text-slate-100 mb-1">
+              Participants
+            </h3>
             <p className="text-xs text-slate-400">
-              Add new participants, edit details, enable/disable access, and manage the student registry.
+              Add new participants, edit details, enable/disable access, and
+              manage the student registry.
             </p>
           </Link>
 
@@ -112,9 +148,12 @@ const AdminDashboardShell = () => {
                 View &rarr;
               </span>
             </div>
-            <h3 className="text-base font-bold text-slate-100 mb-1">Results &amp; Statistics</h3>
+            <h3 className="text-base font-bold text-slate-100 mb-1">
+              Results &amp; Statistics
+            </h3>
             <p className="text-xs text-slate-400">
-              View operational statistics, participant results, and leaderboards. Export CSV data.
+              View operational statistics, participant results, and
+              leaderboards. Export CSV data.
             </p>
           </Link>
         </div>

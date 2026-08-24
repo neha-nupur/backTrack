@@ -1,9 +1,9 @@
-const Participant = require('../models/Participant');
-const Event = require('../models/Event');
-const Challenge = require('../models/Challenge');
-const Attempt = require('../models/Attempt');
-const { Types } = require('mongoose');
-const { ATTEMPT_STATUS } = require('../constants/status');
+const Participant = require("../models/Participant");
+const Event = require("../models/Event");
+const Challenge = require("../models/Challenge");
+const Attempt = require("../models/Attempt");
+const { Types } = require("mongoose");
+const { ATTEMPT_STATUS } = require("../constants/status");
 
 class AdminMonitoringService {
   /**
@@ -14,29 +14,40 @@ class AdminMonitoringService {
       totalParticipants,
       activeParticipants,
       disabledParticipants,
+      totalEvents,
       upcomingEvents,
       liveEvents,
       completedEvents,
       totalChallenges,
       enabledChallenges,
-      totalAttempts
+      totalAttempts,
     ] = await Promise.all([
       Participant.countDocuments({}),
-      Participant.countDocuments({ status: 'ACTIVE' }),
-      Participant.countDocuments({ status: 'DISABLED' }),
-      Event.countDocuments({ status: 'UPCOMING' }),
-      Event.countDocuments({ status: 'LIVE' }),
-      Event.countDocuments({ status: 'COMPLETED' }),
+      Participant.countDocuments({ status: "ACTIVE" }),
+      Participant.countDocuments({ status: "DISABLED" }),
+      Event.countDocuments({}),
+      Event.countDocuments({ status: "UPCOMING" }),
+      Event.countDocuments({ status: "LIVE" }),
+      Event.countDocuments({ status: "COMPLETED" }),
       Challenge.countDocuments(),
-      Challenge.countDocuments({ status: 'ENABLED' }),
-      Attempt.countDocuments()
+      Challenge.countDocuments({ status: "ENABLED" }),
+      Attempt.countDocuments(),
     ]);
 
     return {
-      participants: { total: totalParticipants, active: activeParticipants, disabled: disabledParticipants },
-      events: { upcoming: upcomingEvents, live: liveEvents, completed: completedEvents },
+      participants: {
+        total: totalParticipants,
+        active: activeParticipants,
+        disabled: disabledParticipants,
+      },
+      events: {
+        total: totalEvents,
+        upcoming: upcomingEvents,
+        live: liveEvents,
+        completed: completedEvents,
+      },
       challenges: { total: totalChallenges, enabled: enabledChallenges },
-      attempts: { total: totalAttempts }
+      attempts: { total: totalAttempts },
     };
   }
 
@@ -57,9 +68,9 @@ class AdminMonitoringService {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(options.limit)
-      .populate('participantId', 'name email')
-      .populate('eventId', 'name')
-      .populate('challengeId', 'title challengeNumber')
+      .populate("participantId", "name email")
+      .populate("eventId", "name")
+      .populate("challengeId", "title challengeNumber")
       .lean();
 
     const total = await Attempt.countDocuments(query);
@@ -69,7 +80,7 @@ class AdminMonitoringService {
       page: options.page,
       limit: options.limit,
       total,
-      totalPages: Math.ceil(total / options.limit)
+      totalPages: Math.ceil(total / options.limit),
     };
   }
 
@@ -78,9 +89,9 @@ class AdminMonitoringService {
    */
   async getAttemptById(attemptId) {
     const attempt = await Attempt.findById(attemptId)
-      .populate('participantId', 'name email')
-      .populate('eventId', 'name')
-      .populate('challengeId', 'title challengeNumber')
+      .populate("participantId", "name email")
+      .populate("eventId", "name")
+      .populate("challengeId", "title challengeNumber")
       .lean();
 
     if (!attempt) return null;
@@ -94,20 +105,27 @@ class AdminMonitoringService {
     const event = await Event.findById(eventId).lean();
     if (!event) return null;
 
-    const [totalAttempts, successExecutions, failedExecutions, challenges] = await Promise.all([
-      Attempt.countDocuments({ eventId }),
-      Attempt.countDocuments({ eventId, status: ATTEMPT_STATUS.SUCCESS }),
-      Attempt.countDocuments({ eventId, status: { $ne: ATTEMPT_STATUS.SUCCESS } }),
-      Challenge.countDocuments({ eventId })
-    ]);
+    const [totalAttempts, successExecutions, failedExecutions, challenges] =
+      await Promise.all([
+        Attempt.countDocuments({ eventId }),
+        Attempt.countDocuments({ eventId, status: ATTEMPT_STATUS.SUCCESS }),
+        Attempt.countDocuments({
+          eventId,
+          status: { $ne: ATTEMPT_STATUS.SUCCESS },
+        }),
+        Challenge.countDocuments({ eventId }),
+      ]);
 
     // Unique participants who attempted something in this event
     const uniqueParticipantsResult = await Attempt.aggregate([
       { $match: { eventId: new Types.ObjectId(eventId) } },
-      { $group: { _id: '$participantId' } },
-      { $count: 'total' }
+      { $group: { _id: "$participantId" } },
+      { $count: "total" },
     ]);
-    const activeParticipants = uniqueParticipantsResult.length > 0 ? uniqueParticipantsResult[0].total : 0;
+    const activeParticipants =
+      uniqueParticipantsResult.length > 0
+        ? uniqueParticipantsResult[0].total
+        : 0;
 
     return {
       event: { id: event._id, name: event.name, status: event.status },
@@ -116,8 +134,8 @@ class AdminMonitoringService {
         successExecutions,
         failedExecutions,
         activeParticipants,
-        totalChallenges: challenges
-      }
+        totalChallenges: challenges,
+      },
     };
   }
 
@@ -134,20 +152,26 @@ class AdminMonitoringService {
   _serializeAttempt(attempt) {
     return {
       id: attempt._id,
-      participant: attempt.participantId ? {
-        id: attempt.participantId._id,
-        name: attempt.participantId.name,
-        email: attempt.participantId.email
-      } : null,
-      event: attempt.eventId ? {
-        id: attempt.eventId._id,
-        name: attempt.eventId.name
-      } : null,
-      challenge: attempt.challengeId ? {
-        id: attempt.challengeId._id,
-        title: attempt.challengeId.title,
-        challengeNumber: attempt.challengeId.challengeNumber
-      } : null,
+      participant: attempt.participantId
+        ? {
+            id: attempt.participantId._id,
+            name: attempt.participantId.name,
+            email: attempt.participantId.email,
+          }
+        : null,
+      event: attempt.eventId
+        ? {
+            id: attempt.eventId._id,
+            name: attempt.eventId.name,
+          }
+        : null,
+      challenge: attempt.challengeId
+        ? {
+            id: attempt.challengeId._id,
+            title: attempt.challengeId.title,
+            challengeNumber: attempt.challengeId.challengeNumber,
+          }
+        : null,
       input: attempt.input,
       output: attempt.output,
       error: attempt.error,
@@ -155,7 +179,7 @@ class AdminMonitoringService {
       executionTimeMs: attempt.executionTime,
       score: attempt.score,
       isCorrect: attempt.isCorrect,
-      createdAt: attempt.createdAt
+      createdAt: attempt.createdAt,
     };
   }
 }

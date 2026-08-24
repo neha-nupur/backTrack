@@ -1,12 +1,34 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { getParticipantChallenges, executeChallenge } from '../../services/challengeService';
-import { getAttempts } from '../../services/resultService';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import {
+  getParticipantChallenges,
+  executeChallenge,
+} from "../../services/challengeService";
+import { getLiveEvents } from "../../services/eventService";
+import { getAttempts } from "../../services/resultService";
+
+const getTimeRemainingMs = (endTime) => {
+  if (!endTime) return 0;
+  return Math.max(0, new Date(endTime).getTime() - Date.now());
+};
+
+const formatCountdown = (ms) => {
+  if (!Number.isFinite(ms) || ms <= 0) return "00:00:00";
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+};
 
 /**
  * Participant backTrack Challenge Workspace
- * 
+ *
  * Displays challenges for a LIVE event and provides a terminal-style
  * execution interface with input/output panels, validation, and challenge progression.
  */
@@ -35,39 +57,103 @@ const ChallengePage = () => {
   });
 
   // Execution state
-  const [userInput, setUserInput] = useState('');
+  const [userInput, setUserInput] = useState("");
   const [inputError, setInputError] = useState(null);
   const [executionResult, setExecutionResult] = useState(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionHistory, setExecutionHistory] = useState([]);
+  const [eventEndTime, setEventEndTime] = useState(() => {
+    try {
+      return localStorage.getItem(`blackbox_event_end_${eventId}`) || null;
+    } catch {
+      return null;
+    }
+  });
+  const [timeRemainingMs, setTimeRemainingMs] = useState(() =>
+    getTimeRemainingMs(eventEndTime),
+  );
+
+  const refreshEventEndTime = useCallback(async () => {
+    if (!eventId) return;
+
+    try {
+      const res = await getLiveEvents();
+      const event = (res?.data?.events || []).find(
+        (entry) => (entry.id ?? entry._id) === eventId,
+      );
+
+      const nextEndTime =
+        event?.endTime || localStorage.getItem(`blackbox_event_end_${eventId}`);
+      if (nextEndTime) {
+        setEventEndTime(nextEndTime);
+        try {
+          localStorage.setItem(`blackbox_event_end_${eventId}`, nextEndTime);
+        } catch (err) {
+          console.warn("Failed to persist event timer state:", err);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to refresh event timer metadata:", err);
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    refreshEventEndTime();
+  }, [refreshEventEndTime]);
+
+  useEffect(() => {
+    if (!eventEndTime) {
+      setTimeRemainingMs(0);
+      return undefined;
+    }
+
+    const syncTimer = () =>
+      setTimeRemainingMs(getTimeRemainingMs(eventEndTime));
+    syncTimer();
+
+    const intervalId = window.setInterval(syncTimer, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [eventEndTime]);
 
   // Save solved IDs to localStorage
-  const markChallengeSolved = useCallback((challengeId) => {
-    setSolvedChallengeIds((prev) => {
-      const updated = new Set(prev);
-      updated.add(challengeId);
-      try {
-        localStorage.setItem(`blackbox_solved_${eventId}`, JSON.stringify([...updated]));
-      } catch (err) {
-        console.warn('Failed to persist solved challenge state:', err);
-      }
-      return updated;
-    });
-  }, [eventId]);
+  const markChallengeSolved = useCallback(
+    (challengeId) => {
+      setSolvedChallengeIds((prev) => {
+        const updated = new Set(prev);
+        updated.add(challengeId);
+        try {
+          localStorage.setItem(
+            `blackbox_solved_${eventId}`,
+            JSON.stringify([...updated]),
+          );
+        } catch (err) {
+          console.warn("Failed to persist solved challenge state:", err);
+        }
+        return updated;
+      });
+    },
+    [eventId],
+  );
 
   // Remove false/stale solved IDs
-  const unmarkChallengeSolved = useCallback((challengeId) => {
-    setSolvedChallengeIds((prev) => {
-      const updated = new Set(prev);
-      updated.delete(challengeId);
-      try {
-        localStorage.setItem(`blackbox_solved_${eventId}`, JSON.stringify([...updated]));
-      } catch (err) {
-        console.warn('Failed to update solved challenge state:', err);
-      }
-      return updated;
-    });
-  }, [eventId]);
+  const unmarkChallengeSolved = useCallback(
+    (challengeId) => {
+      setSolvedChallengeIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(challengeId);
+        try {
+          localStorage.setItem(
+            `blackbox_solved_${eventId}`,
+            JSON.stringify([...updated]),
+          );
+        } catch (err) {
+          console.warn("Failed to update solved challenge state:", err);
+        }
+        return updated;
+      });
+    },
+    [eventId],
+  );
 
   // Fetch challenges for this event
   const fetchChallenges = useCallback(async () => {
@@ -83,7 +169,7 @@ const ChallengePage = () => {
         }
       }
     } catch (err) {
-      setFetchError(err.message || 'Failed to load challenges.');
+      setFetchError(err.message || "Failed to load challenges.");
     } finally {
       setIsLoading(false);
     }
@@ -105,32 +191,38 @@ const ChallengePage = () => {
   // flag already reflects whether the run genuinely produced output — trust
   // it here instead of re-guessing based on the output's value.
   const isQualifiedOutput = (output) => {
-    return output !== null && output !== undefined && String(output).trim() !== '';
+    return (
+      output !== null && output !== undefined && String(output).trim() !== ""
+    );
   };
 
   // Fetch attempts for selected challenge
-  const fetchAttemptHistory = useCallback(async (challengeId) => {
-    try {
-      const res = await getAttempts(eventId, { challengeId, limit: 20 });
-      if (res.success && res.data) {
-        const attempts = res.data.attempts || [];
-        setExecutionHistory(attempts);
+  const fetchAttemptHistory = useCallback(
+    async (challengeId) => {
+      try {
+        const res = await getAttempts(eventId, { challengeId, limit: 20 });
+        if (res.success && res.data) {
+          const attempts = res.data.attempts || [];
+          setExecutionHistory(attempts);
 
-        // Check if ANY attempt was legitimately successful and produced a qualified solution output
-        const hasValidSuccess = attempts.some(
-          (a) => a.success === true && a.output && isQualifiedOutput(a.output)
-        );
+          // Check if ANY attempt was legitimately successful and produced a qualified solution output
+          const hasValidSuccess = attempts.some(
+            (a) =>
+              a.success === true && a.output && isQualifiedOutput(a.output),
+          );
 
-        if (hasValidSuccess) {
-          markChallengeSolved(challengeId);
-        } else {
-          unmarkChallengeSolved(challengeId);
+          if (hasValidSuccess) {
+            markChallengeSolved(challengeId);
+          } else {
+            unmarkChallengeSolved(challengeId);
+          }
         }
+      } catch (err) {
+        console.error("Failed to fetch attempt history:", err);
       }
-    } catch (err) {
-      console.error('Failed to fetch attempt history:', err);
-    }
-  }, [eventId, markChallengeSolved, unmarkChallengeSolved]);
+    },
+    [eventId, markChallengeSolved, unmarkChallengeSolved],
+  );
 
   useEffect(() => {
     if (selectedChallenge) {
@@ -152,7 +244,10 @@ const ChallengePage = () => {
   }, [selectedChallenge, solvedChallengeIds]);
 
   const hasNextChallenge = useMemo(() => {
-    return currentChallengeIndex >= 0 && currentChallengeIndex < challenges.length - 1;
+    return (
+      currentChallengeIndex >= 0 &&
+      currentChallengeIndex < challenges.length - 1
+    );
   }, [currentChallengeIndex, challenges.length]);
 
   const nextChallenge = useMemo(() => {
@@ -163,7 +258,7 @@ const ChallengePage = () => {
   // Handle challenge selection
   const handleSelectChallenge = (challenge) => {
     setSelectedChallenge(challenge);
-    setUserInput('');
+    setUserInput("");
     setInputError(null);
     setExecutionResult(null);
   };
@@ -181,7 +276,7 @@ const ChallengePage = () => {
 
     // Strict input validation: must not be empty or whitespace only
     if (!userInput || !userInput.trim()) {
-      setInputError('Please enter a valid input to test the black box.');
+      setInputError("Please enter a valid input to test the black box.");
       return;
     }
 
@@ -190,8 +285,12 @@ const ChallengePage = () => {
     setExecutionResult(null);
 
     try {
-      const res = await executeChallenge(eventId, selectedChallenge.id, userInput.trim());
-      
+      const res = await executeChallenge(
+        eventId,
+        selectedChallenge.id,
+        userInput.trim(),
+      );
+
       if (res.success && res.data?.execution) {
         const exec = res.data.execution;
         const attempt = res.data.attempt;
@@ -202,21 +301,28 @@ const ChallengePage = () => {
         }
 
         // Check if execution yielded valid non-fallback solution output without errors
-        if (exec.success && exec.output && isQualifiedOutput(exec.output) && !exec.error) {
+        if (
+          exec.success &&
+          exec.output &&
+          isQualifiedOutput(exec.output) &&
+          !exec.error
+        ) {
           markChallengeSolved(selectedChallenge.id);
         } else {
           unmarkChallengeSolved(selectedChallenge.id);
         }
       } else {
-        throw new Error(res.message || 'Execution failed');
+        throw new Error(res.message || "Execution failed");
       }
     } catch (err) {
       setExecutionResult({
         success: false,
         output: null,
         error: {
-          code: err.errorCode || 'EXECUTION_ERROR',
-          message: err.message || 'Execution request failed. Please check your input format.',
+          code: err.errorCode || "EXECUTION_ERROR",
+          message:
+            err.message ||
+            "Execution request failed. Please check your input format.",
         },
       });
       unmarkChallengeSolved(selectedChallenge.id);
@@ -227,7 +333,7 @@ const ChallengePage = () => {
 
   // Handle keyboard shortcut (Ctrl+Enter to execute)
   const handleKeyDown = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       handleExecute();
     }
@@ -239,7 +345,7 @@ const ChallengePage = () => {
       <nav className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/participant/dashboard')}
+            onClick={() => navigate("/participant/dashboard")}
             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center gap-1.5"
           >
             <span>←</span>
@@ -247,19 +353,37 @@ const ChallengePage = () => {
           </button>
           <div className="hidden md:flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-xs text-emerald-400 font-bold tracking-wider">[ backTrack EXECUTOR ]</span>
+            <span className="text-xs text-emerald-400 font-bold tracking-wider">
+              [ backTrack EXECUTOR ]
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs text-slate-400 font-sans">
+          <div className="hidden sm:flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 font-mono text-[11px]">
+            <span className="text-slate-500 uppercase tracking-wider">
+              Contest ends
+            </span>
+            <span
+              className={`font-bold ${timeRemainingMs > 0 ? "text-emerald-400" : "text-red-400"}`}
+            >
+              {timeRemainingMs > 0
+                ? formatCountdown(timeRemainingMs)
+                : "00:00:00"}
+            </span>
+          </div>
           <div className="hidden sm:flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-full border border-slate-800 font-mono text-[11px]">
-            <span className="text-emerald-400 font-bold">{solvedChallengeIds.size}</span>
+            <span className="text-emerald-400 font-bold">
+              {solvedChallengeIds.size}
+            </span>
             <span className="text-slate-600">/</span>
             <span className="text-slate-400">{challenges.length} Solved</span>
           </div>
           <div>
-            <span className="text-slate-500">Participant:</span>{' '}
-            <span className="text-slate-200 font-mono font-bold">{currentUser?.name || 'Participant'}</span>
+            <span className="text-slate-500">Participant:</span>{" "}
+            <span className="text-slate-200 font-mono font-bold">
+              {currentUser?.name || "Participant"}
+            </span>
           </div>
         </div>
       </nav>
@@ -313,7 +437,7 @@ const ChallengePage = () => {
               </div>
             ) : (
               challenges.map((ch, idx) => {
-                const challengeNum = ch.challengeNumber || (idx + 1);
+                const challengeNum = ch.challengeNumber || idx + 1;
                 const isSelected = selectedChallenge?.id === ch.id;
                 const isSolved = solvedChallengeIds.has(ch.id);
 
@@ -323,30 +447,30 @@ const ChallengePage = () => {
                     onClick={() => handleSelectChallenge(ch)}
                     className={`w-full text-left p-4 hover:bg-slate-800/60 transition group ${
                       isSelected
-                        ? 'bg-slate-800 border-l-2 border-emerald-500'
-                        : 'border-l-2 border-transparent'
+                        ? "bg-slate-800 border-l-2 border-emerald-500"
+                        : "border-l-2 border-transparent"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <span
                         className={`text-xs font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 ${
                           isSolved
-                            ? 'bg-emerald-500 text-slate-950 font-bold'
+                            ? "bg-emerald-500 text-slate-950 font-bold"
                             : isSelected
-                            ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/50'
-                            : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'
+                              ? "bg-emerald-600/30 text-emerald-400 border border-emerald-500/50"
+                              : "bg-slate-800 text-slate-400 group-hover:bg-slate-700"
                         }`}
                       >
-                        {isSolved ? '✓' : challengeNum}
+                        {isSolved ? "✓" : challengeNum}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h3
                             className={`text-sm font-semibold truncate ${
-                              isSelected ? 'text-emerald-400' : 'text-slate-200'
+                              isSelected ? "text-emerald-400" : "text-slate-200"
                             }`}
                           >
-                            Challenge {String(challengeNum).padStart(2, '0')}
+                            Challenge {String(challengeNum).padStart(2, "0")}
                           </h3>
                           {isSolved && (
                             <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
@@ -372,7 +496,9 @@ const ChallengePage = () => {
                 <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-emerald-400 font-bold">[ CURRENT CHALLENGE ]</span>
+                      <span className="text-xs text-emerald-400 font-bold">
+                        [ CURRENT CHALLENGE ]
+                      </span>
                       {isCurrentChallengeSolved && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
                           ✓ OUTPUT VERIFIED
@@ -380,7 +506,11 @@ const ChallengePage = () => {
                       )}
                     </div>
                     <h1 className="text-xl md:text-2xl font-bold text-white mt-0.5">
-                      Challenge {String(selectedChallenge.challengeNumber || currentChallengeIndex + 1).padStart(2, '0')}
+                      Challenge{" "}
+                      {String(
+                        selectedChallenge.challengeNumber ||
+                          currentChallengeIndex + 1,
+                      ).padStart(2, "0")}
                     </h1>
                   </div>
 
@@ -404,18 +534,25 @@ const ChallengePage = () => {
                         disabled={!isCurrentChallengeSolved}
                         title={
                           isCurrentChallengeSolved
-                            ? `Go to Challenge ${String(currentChallengeIndex + 2).padStart(2, '0')}`
-                            : 'Provide input and generate output to unlock next challenge'
+                            ? `Go to Challenge ${String(currentChallengeIndex + 2).padStart(2, "0")}`
+                            : "Provide input and generate output to unlock next challenge"
                         }
                         className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 shadow-lg ${
                           isCurrentChallengeSolved
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 cursor-pointer animate-pulse'
-                            : 'bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60'
+                            ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 cursor-pointer animate-pulse"
+                            : "bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60"
                         }`}
                       >
                         {isCurrentChallengeSolved ? (
                           <>
-                            <span>Next Challenge ({String(currentChallengeIndex + 2).padStart(2, '0')})</span>
+                            <span>
+                              Next Challenge (
+                              {String(currentChallengeIndex + 2).padStart(
+                                2,
+                                "0",
+                              )}
+                              )
+                            </span>
                             <span>➔</span>
                           </>
                         ) : (
@@ -439,14 +576,16 @@ const ChallengePage = () => {
                 {/* Constraints & Hint Accordion */}
                 <div className="max-w-5xl mx-auto mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Input Constraints */}
-                  {(selectedChallenge.inputConstraints || selectedChallenge.constraints) ? (
+                  {selectedChallenge.inputConstraints ||
+                  selectedChallenge.constraints ? (
                     <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
                       <h4 className="text-xs font-bold text-slate-400 tracking-wide uppercase flex items-center gap-1.5">
                         <span>📏</span>
                         <span>INPUT CONSTRAINTS</span>
                       </h4>
                       <p className="text-xs text-slate-300 font-mono whitespace-pre-wrap">
-                        {selectedChallenge.inputConstraints || selectedChallenge.constraints}
+                        {selectedChallenge.inputConstraints ||
+                          selectedChallenge.constraints}
                       </p>
                     </div>
                   ) : (
@@ -485,7 +624,7 @@ const ChallengePage = () => {
                     </h3>
                     <button
                       onClick={() => {
-                        setUserInput('');
+                        setUserInput("");
                         setInputError(null);
                       }}
                       className="text-[10px] text-slate-500 hover:text-slate-300 transition"
@@ -516,7 +655,9 @@ const ChallengePage = () => {
                   <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-t border-slate-800">
                     <span className="text-[10px] text-slate-500">
                       {userInput.length} / 10,000 chars
-                      <span className="hidden sm:inline ml-2 text-slate-600">• Ctrl+Enter to execute</span>
+                      <span className="hidden sm:inline ml-2 text-slate-600">
+                        • Ctrl+Enter to execute
+                      </span>
                     </span>
                     <button
                       onClick={handleExecute}
@@ -547,14 +688,18 @@ const ChallengePage = () => {
                       {executionResult && (
                         <span
                           className={`ml-2 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                            executionResult.success && executionResult.output && executionResult.output.trim().length > 0
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                              : 'bg-red-950 text-red-400 border border-red-800'
+                            executionResult.success &&
+                            executionResult.output &&
+                            executionResult.output.trim().length > 0
+                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                              : "bg-red-950 text-red-400 border border-red-800"
                           }`}
                         >
-                          {executionResult.success && executionResult.output && executionResult.output.trim().length > 0
-                            ? '✓ SUCCESS'
-                            : '✗ FAILED'}
+                          {executionResult.success &&
+                          executionResult.output &&
+                          executionResult.output.trim().length > 0
+                            ? "✓ SUCCESS"
+                            : "✗ FAILED"}
                         </span>
                       )}
                     </h3>
@@ -574,7 +719,8 @@ const ChallengePage = () => {
                     ) : executionResult ? (
                       <div className="space-y-4">
                         {/* Output */}
-                        {executionResult.output !== null && executionResult.output !== '' ? (
+                        {executionResult.output !== null &&
+                        executionResult.output !== "" ? (
                           <div>
                             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">
                               Received Output:
@@ -592,24 +738,38 @@ const ChallengePage = () => {
                               <span>⚠️</span>
                               <span>{executionResult.error.code}</span>
                             </div>
-                            <p className="text-red-300 font-sans">{executionResult.error.message}</p>
+                            <p className="text-red-300 font-sans">
+                              {executionResult.error.message}
+                            </p>
                           </div>
                         )}
 
                         {/* Success with no output */}
-                        {executionResult.success && (!executionResult.output || executionResult.output === '') && !executionResult.error && (
-                          <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-amber-300 text-xs">
-                            <p>⚠️ Execution completed, but the hidden logic returned no output for this input.</p>
-                            <p className="text-[11px] text-amber-400/80 mt-1">Try entering a different input format.</p>
-                          </div>
-                        )}
+                        {executionResult.success &&
+                          (!executionResult.output ||
+                            executionResult.output === "") &&
+                          !executionResult.error && (
+                            <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-amber-300 text-xs">
+                              <p>
+                                ⚠️ Execution completed, but the hidden logic
+                                returned no output for this input.
+                              </p>
+                              <p className="text-[11px] text-amber-400/80 mt-1">
+                                Try entering a different input format.
+                              </p>
+                            </div>
+                          )}
 
                         {/* Next Challenge Prompt when Solved */}
                         {isCurrentChallengeSolved && hasNextChallenge && (
                           <div className="p-3.5 bg-emerald-950/40 border border-emerald-800/60 rounded-lg flex items-center justify-between animate-fadeIn">
                             <div className="text-xs text-emerald-300">
-                              <span className="font-bold">Challenge {currentChallengeIndex + 1} passed!</span>
-                              <p className="text-[11px] text-emerald-400/80">You can now proceed to the next challenge.</p>
+                              <span className="font-bold">
+                                Challenge {currentChallengeIndex + 1} passed!
+                              </span>
+                              <p className="text-[11px] text-emerald-400/80">
+                                You can now proceed to the next challenge.
+                              </p>
                             </div>
                             <button
                               onClick={handleGoToNextChallenge}
@@ -624,7 +784,10 @@ const ChallengePage = () => {
                     ) : (
                       <div className="text-sm text-slate-600 italic py-8 text-center space-y-1">
                         <p>Output will appear here after execution.</p>
-                        <p className="text-xs text-slate-700">Enter your test input and click Run or press Ctrl+Enter.</p>
+                        <p className="text-xs text-slate-700">
+                          Enter your test input and click Run or press
+                          Ctrl+Enter.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -635,9 +798,12 @@ const ChallengePage = () => {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3">
                 <div className="text-4xl">🎯</div>
-                <h2 className="text-lg font-bold text-slate-300">Select a Challenge</h2>
+                <h2 className="text-lg font-bold text-slate-300">
+                  Select a Challenge
+                </h2>
                 <p className="text-sm text-slate-500 font-sans max-w-sm">
-                  Choose a challenge from the sidebar to view its constraints and begin execution.
+                  Choose a challenge from the sidebar to view its constraints
+                  and begin execution.
                 </p>
               </div>
             </div>
@@ -661,14 +827,19 @@ const ChallengePage = () => {
             </div>
             <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60">
               {executionHistory.map((entry) => (
-                <div key={entry.id} className="p-3 hover:bg-slate-800/40 transition">
+                <div
+                  key={entry.id}
+                  className="p-3 hover:bg-slate-800/40 transition"
+                >
                   <div className="flex items-center justify-between mb-1">
                     <span
                       className={`text-[10px] font-bold ${
-                        entry.success && entry.output ? 'text-emerald-400' : 'text-red-400'
+                        entry.success && entry.output
+                          ? "text-emerald-400"
+                          : "text-red-400"
                       }`}
                     >
-                      {entry.success && entry.output ? '✓ SUCCESS' : '✗ FAILED'}
+                      {entry.success && entry.output ? "✓ SUCCESS" : "✗ FAILED"}
                     </span>
                     <span className="text-[10px] text-slate-600">
                       {new Date(entry.createdAt).toLocaleTimeString()}
@@ -685,7 +856,9 @@ const ChallengePage = () => {
                     </p>
                   )}
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-[10px] text-slate-600">⏱ {entry.executionTimeMs || 0}ms</span>
+                    <span className="text-[10px] text-slate-600">
+                      ⏱ {entry.executionTimeMs || 0}ms
+                    </span>
                   </div>
                 </div>
               ))}

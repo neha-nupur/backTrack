@@ -1,9 +1,13 @@
-const bcrypt = require('bcryptjs');
-const Event = require('../models/Event');
-const Participant = require('../models/Participant');
-const AppError = require('../utils/appError');
-const logger = require('../utils/logger');
-const { EVENT_STATUS, EVENT_TYPE, PARTICIPANT_STATUS } = require('../constants/status');
+const bcrypt = require("bcryptjs");
+const Event = require("../models/Event");
+const Participant = require("../models/Participant");
+const AppError = require("../utils/appError");
+const logger = require("../utils/logger");
+const {
+  EVENT_STATUS,
+  EVENT_TYPE,
+  PARTICIPANT_STATUS,
+} = require("../constants/status");
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -14,9 +18,10 @@ const MAX_LIMIT = 100;
  */
 const formatAdminEvent = (doc) => ({
   id: doc._id ? doc._id.toString() : doc.id,
+  _id: doc._id ? doc._id.toString() : doc.id,
   name: doc.name,
   type: doc.type || EVENT_TYPE.CONTEST,
-  description: doc.description || '',
+  description: doc.description || "",
   startTime: doc.startTime,
   endTime: doc.endTime,
   status: doc.status,
@@ -34,7 +39,7 @@ const formatParticipantEvent = (doc) => ({
   id: doc._id ? doc._id.toString() : doc.id,
   name: doc.name,
   type: doc.type || EVENT_TYPE.CONTEST,
-  description: doc.description || '',
+  description: doc.description || "",
   startTime: doc.startTime,
   endTime: doc.endTime,
   status: doc.status,
@@ -48,7 +53,7 @@ const formatParticipantEvent = (doc) => ({
 const createEvent = async ({
   name,
   type = EVENT_TYPE.CONTEST,
-  description = '',
+  description = "",
   startTime,
   endTime,
   status = EVENT_STATUS.UPCOMING,
@@ -56,14 +61,14 @@ const createEvent = async ({
   password = null,
 }) => {
   let passwordHash = null;
-  if (password && typeof password === 'string' && password.trim()) {
+  if (password && typeof password === "string" && password.trim()) {
     passwordHash = await bcrypt.hash(password.trim(), 10);
   }
 
   const event = await Event.create({
     name: name.trim(),
     type: type || EVENT_TYPE.CONTEST,
-    description: description ? description.trim() : '',
+    description: description ? description.trim() : "",
     startTime: new Date(startTime),
     endTime: new Date(endTime),
     status: status || EVENT_STATUS.UPCOMING,
@@ -71,7 +76,9 @@ const createEvent = async ({
     passwordHash,
   });
 
-  logger.info(`[EVENT CREATED] "${event.name}" (${event._id}) type [${event.type}] with status [${event.status}]`);
+  logger.info(
+    `[EVENT CREATED] "${event.name}" (${event._id}) type [${event.type}] with status [${event.status}]`,
+  );
   return formatAdminEvent(event);
 };
 
@@ -80,7 +87,10 @@ const createEvent = async ({
  */
 const listAdminEvents = async (query = {}) => {
   const page = Math.max(1, parseInt(query.page, 10) || DEFAULT_PAGE);
-  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(query.limit, 10) || DEFAULT_LIMIT));
+  const limit = Math.min(
+    MAX_LIMIT,
+    Math.max(1, parseInt(query.limit, 10) || DEFAULT_LIMIT),
+  );
   const skip = (page - 1) * limit;
 
   const filter = {};
@@ -90,8 +100,10 @@ const listAdminEvents = async (query = {}) => {
   }
 
   if (query.search && query.search.trim()) {
-    const escapedSearch = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.name = new RegExp(escapedSearch, 'i');
+    const escapedSearch = query.search
+      .trim()
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    filter.name = new RegExp(escapedSearch, "i");
   }
 
   const [total, docs] = await Promise.all([
@@ -122,7 +134,7 @@ const listAdminEvents = async (query = {}) => {
 const getEventById = async (id) => {
   const event = await Event.findById(id);
   if (!event) {
-    throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
+    throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND");
   }
   return formatAdminEvent(event);
 };
@@ -133,15 +145,18 @@ const getEventById = async (id) => {
 const updateEvent = async (id, fields) => {
   const event = await Event.findById(id);
   if (!event) {
-    throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
+    throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND");
   }
 
   // Lifecycle check: prevent modifying times of a COMPLETED event
-  if (event.status === EVENT_STATUS.COMPLETED && (fields.startTime || fields.endTime)) {
+  if (
+    event.status === EVENT_STATUS.COMPLETED &&
+    (fields.startTime || fields.endTime)
+  ) {
     throw new AppError(
-      'Cannot change scheduled times of an already completed event.',
+      "Cannot change scheduled times of an already completed event.",
       400,
-      'CANNOT_MODIFY_COMPLETED_EVENT'
+      "CANNOT_MODIFY_COMPLETED_EVENT",
     );
   }
 
@@ -149,7 +164,10 @@ const updateEvent = async (id, fields) => {
     event.name = fields.name.trim();
   }
 
-  if (fields.type && (fields.type === EVENT_TYPE.DEMO || fields.type === EVENT_TYPE.CONTEST)) {
+  if (
+    fields.type &&
+    (fields.type === EVENT_TYPE.DEMO || fields.type === EVENT_TYPE.CONTEST)
+  ) {
     event.type = fields.type;
   }
 
@@ -158,22 +176,32 @@ const updateEvent = async (id, fields) => {
   }
 
   if (fields.password !== undefined) {
-    if (fields.password && typeof fields.password === 'string' && fields.password.trim()) {
+    if (
+      fields.password &&
+      typeof fields.password === "string" &&
+      fields.password.trim()
+    ) {
       event.passwordHash = await bcrypt.hash(fields.password.trim(), 10);
-    } else if (fields.password === null || fields.password === '') {
+    } else if (fields.password === null || fields.password === "") {
       event.passwordHash = null;
     }
   }
 
   if (fields.description !== undefined) {
-    event.description = fields.description ? fields.description.trim() : '';
+    event.description = fields.description ? fields.description.trim() : "";
   }
 
-  const newStart = fields.startTime ? new Date(fields.startTime) : event.startTime;
+  const newStart = fields.startTime
+    ? new Date(fields.startTime)
+    : event.startTime;
   const newEnd = fields.endTime ? new Date(fields.endTime) : event.endTime;
 
   if (newEnd.getTime() <= newStart.getTime()) {
-    throw new AppError('Scheduled end time must be after the scheduled start time.', 400, 'INVALID_TIME_RANGE');
+    throw new AppError(
+      "Scheduled end time must be after the scheduled start time.",
+      400,
+      "INVALID_TIME_RANGE",
+    );
   }
 
   if (fields.startTime) event.startTime = newStart;
@@ -199,9 +227,9 @@ const validateStatusTransition = (currentStatus, newStatus) => {
   // Disallow transition out of COMPLETED state to preserve historical event integrity
   if (currentStatus === EVENT_STATUS.COMPLETED) {
     throw new AppError(
-      'Completed events cannot be transitioned back to active or upcoming states.',
+      "Completed events cannot be transitioned back to active or upcoming states.",
       400,
-      'INVALID_STATUS_TRANSITION'
+      "INVALID_STATUS_TRANSITION",
     );
   }
 };
@@ -212,19 +240,28 @@ const validateStatusTransition = (currentStatus, newStatus) => {
 const updateEventStatus = async (id, status) => {
   const event = await Event.findById(id);
   if (!event) {
-    throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
+    throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND");
   }
 
   validateStatusTransition(event.status, status);
 
   // Safety check before marking LIVE: ensure valid duration
-  if (status === EVENT_STATUS.LIVE && event.endTime.getTime() <= event.startTime.getTime()) {
-    throw new AppError('Cannot mark event LIVE: End time is not after start time.', 400, 'INVALID_TIME_RANGE');
+  if (
+    status === EVENT_STATUS.LIVE &&
+    event.endTime.getTime() <= event.startTime.getTime()
+  ) {
+    throw new AppError(
+      "Cannot mark event LIVE: End time is not after start time.",
+      400,
+      "INVALID_TIME_RANGE",
+    );
   }
 
   event.status = status;
   const saved = await event.save();
-  logger.info(`[EVENT STATUS CHANGED] "${saved.name}" (${saved._id}) -> [${status}]`);
+  logger.info(
+    `[EVENT STATUS CHANGED] "${saved.name}" (${saved._id}) -> [${status}]`,
+  );
   return formatAdminEvent(saved);
 };
 
@@ -234,7 +271,7 @@ const updateEventStatus = async (id, status) => {
 const deleteEvent = async (id) => {
   const event = await Event.findByIdAndDelete(id);
   if (!event) {
-    throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
+    throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND");
   }
   logger.info(`[EVENT DELETED] "${event.name}" (${event._id})`);
   return { id: event._id, name: event.name };
@@ -250,9 +287,7 @@ const getParticipantLiveEvents = async (type = null) => {
     filter.type = type;
   }
 
-  const docs = await Event.find(filter)
-    .sort({ startTime: 1 })
-    .lean();
+  const docs = await Event.find(filter).sort({ startTime: 1 }).lean();
 
   return {
     events: docs.map(formatParticipantEvent),
@@ -270,9 +305,7 @@ const getParticipantUpcomingEvents = async (type = null) => {
     filter.type = type;
   }
 
-  const docs = await Event.find(filter)
-    .sort({ startTime: 1 })
-    .lean();
+  const docs = await Event.find(filter).sort({ startTime: 1 }).lean();
 
   return {
     events: docs.map(formatParticipantEvent),
@@ -288,40 +321,64 @@ const startEvent = async (eventId, participantId, password = null) => {
   // 1. Re-verify participant identity and active status from database
   const participant = await Participant.findById(participantId);
   if (!participant) {
-    throw new AppError('Participant account not found.', 404, 'PARTICIPANT_NOT_FOUND');
+    throw new AppError(
+      "Participant account not found.",
+      404,
+      "PARTICIPANT_NOT_FOUND",
+    );
   }
   if (participant.status !== PARTICIPANT_STATUS.ACTIVE) {
-    throw new AppError('Your participant account is disabled and cannot join events.', 403, 'ACCOUNT_DISABLED');
+    throw new AppError(
+      "Your participant account is disabled and cannot join events.",
+      403,
+      "ACCOUNT_DISABLED",
+    );
   }
 
   // 2. Query the requested event
   const event = await Event.findById(eventId);
   if (!event) {
-    throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
+    throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND");
   }
 
   // 3. Check Event Activation
   if (event.isActive === false) {
-    throw new AppError('This event is currently deactivated by administrator.', 403, 'EVENT_INACTIVE');
+    throw new AppError(
+      "This event is currently deactivated by administrator.",
+      403,
+      "EVENT_INACTIVE",
+    );
   }
 
   // 4. Validate Event Status
   if (event.status === EVENT_STATUS.UPCOMING) {
-    throw new AppError('Event is not live yet.', 403, 'EVENT_NOT_LIVE');
+    throw new AppError("Event is not live yet.", 403, "EVENT_NOT_LIVE");
   }
 
   if (event.status === EVENT_STATUS.COMPLETED) {
-    throw new AppError('This event has been completed.', 403, 'EVENT_COMPLETED');
+    throw new AppError(
+      "This event has been completed.",
+      403,
+      "EVENT_COMPLETED",
+    );
   }
 
   // 5. Check Protected Event Password
   if (event.passwordHash) {
-    if (!password || typeof password !== 'string') {
-      throw new AppError('Event password is required to access this protected event.', 401, 'EVENT_PASSWORD_REQUIRED');
+    if (!password || typeof password !== "string") {
+      throw new AppError(
+        "Event password is required to access this protected event.",
+        401,
+        "EVENT_PASSWORD_REQUIRED",
+      );
     }
     const isMatch = await bcrypt.compare(password.trim(), event.passwordHash);
     if (!isMatch) {
-      throw new AppError('Invalid event password.', 401, 'INVALID_EVENT_PASSWORD');
+      throw new AppError(
+        "Invalid event password.",
+        401,
+        "INVALID_EVENT_PASSWORD",
+      );
     }
   }
 
@@ -336,17 +393,17 @@ const startEvent = async (eventId, participantId, password = null) => {
     throw new AppError(
       `Event has not started yet. Please wait until ${event.startTime.toISOString()}.`,
       403,
-      'EVENT_NOT_STARTED'
+      "EVENT_NOT_STARTED",
     );
   }
 
   // Check if after end time
   if (serverTimeMs > endTimeMs) {
-    throw new AppError('This event has ended.', 403, 'EVENT_ENDED');
+    throw new AppError("This event has ended.", 403, "EVENT_ENDED");
   }
 
   logger.info(
-    `[EVENT SESSION STARTED] Participant "${participant.email}" (${participant._id}) started event "${event.name}" (${event._id})`
+    `[EVENT SESSION STARTED] Participant "${participant.email}" (${participant._id}) started event "${event.name}" (${event._id})`,
   );
 
   return {

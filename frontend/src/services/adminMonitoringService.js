@@ -1,10 +1,10 @@
-import apiClient from './apiClient';
+import apiClient from "./apiClient";
 
 /**
  * Fetch dashboard statistics
  */
 export const getDashboardStats = async () => {
-  const response = await apiClient.get('/admin/dashboard');
+  const response = await apiClient.get("/admin/dashboard");
   return response.data;
 };
 
@@ -14,7 +14,7 @@ export const getDashboardStats = async () => {
  */
 export const getAdminAttempts = async (params = {}) => {
   const query = new URLSearchParams();
-  Object.keys(params).forEach(key => {
+  Object.keys(params).forEach((key) => {
     if (params[key]) query.append(key, params[key]);
   });
   const response = await apiClient.get(`/admin/attempts?${query.toString()}`);
