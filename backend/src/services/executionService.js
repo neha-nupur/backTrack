@@ -1,20 +1,24 @@
 /**
  * Execution Service
- * 
+ *
  * Orchestrates the full execution flow.
  * Ensures hiddenCode is sent only to the executor and never returned.
  */
 
-const Challenge = require('../models/Challenge');
-const Event = require('../models/Event');
-const AppError = require('../utils/appError');
-const logger = require('../utils/logger');
-const { CHALLENGE_STATUS, EVENT_STATUS, ATTEMPT_STATUS } = require('../constants/status');
-const executor = require('./codeExecutor/executor');
-const { EXECUTION_ERROR } = require('./codeExecutor/errors');
-const env = require('../config/env');
-const Attempt = require('../models/Attempt');
-const evaluationService = require('./evaluationService');
+const Challenge = require("../models/Challenge");
+const Event = require("../models/Event");
+const AppError = require("../utils/appError");
+const logger = require("../utils/logger");
+const {
+  CHALLENGE_STATUS,
+  EVENT_STATUS,
+  ATTEMPT_STATUS,
+} = require("../constants/status");
+const executor = require("./codeExecutor/executor");
+const { EXECUTION_ERROR } = require("./codeExecutor/errors");
+const env = require("../config/env");
+const Attempt = require("../models/Attempt");
+const evaluationService = require("./evaluationService");
 
 /**
  * Qualifies whether an output represents a genuine execution result.
@@ -69,28 +73,41 @@ const mapToAttemptStatus = (isExecutionSuccessful, executionError) => {
 
 /**
  * Execute a challenge's hidden code with participant input.
- * 
+ *
  * @param {string} participantId - The authenticated participant's ID
  * @param {string} eventId - The event ID
  * @param {string} challengeId - The challenge ID
  * @param {string} userInput - The participant's input string
  * @returns {Promise<{ attempt: object, execution: object }>}
  */
-const executeChallenge = async (participantId, eventId, challengeId, userInput = '') => {
-  if (!userInput || typeof userInput !== 'string' || userInput.trim().length === 0) {
-    throw new AppError('Please enter a valid input before executing the challenge.', 400, 'EMPTY_INPUT');
+const executeChallenge = async (
+  participantId,
+  eventId,
+  challengeId,
+  userInput = "",
+) => {
+  if (
+    !userInput ||
+    typeof userInput !== "string" ||
+    userInput.trim().length === 0
+  ) {
+    throw new AppError(
+      "Please enter a valid input before executing the challenge.",
+      400,
+      "EMPTY_INPUT",
+    );
   }
 
   const event = await Event.findById(eventId);
   if (!event) {
-    throw new AppError('Event not found.', 404, 'EVENT_NOT_FOUND');
+    throw new AppError("Event not found.", 404, "EVENT_NOT_FOUND");
   }
 
   if (event.status !== EVENT_STATUS.LIVE) {
     throw new AppError(
-      'Code execution is only available during LIVE events.',
+      "Code execution is only available during LIVE events.",
       403,
-      'EVENT_NOT_LIVE'
+      "EVENT_NOT_LIVE",
     );
   }
 
@@ -98,47 +115,43 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
   const now = new Date();
   if (now < new Date(event.startTime)) {
     throw new AppError(
-      'This event has not started yet.',
+      "This event has not started yet.",
       403,
-      'EVENT_NOT_STARTED'
+      "EVENT_NOT_STARTED",
     );
   }
   if (now > new Date(event.endTime)) {
-    throw new AppError(
-      'This event has ended.',
-      403,
-      'EVENT_ENDED'
-    );
+    throw new AppError("This event has ended.", 403, "EVENT_ENDED");
   }
 
   const challenge = await Challenge.findById(challengeId);
   if (!challenge) {
-    throw new AppError('Challenge not found.', 404, 'CHALLENGE_NOT_FOUND');
+    throw new AppError("Challenge not found.", 404, "CHALLENGE_NOT_FOUND");
   }
 
   // Ensure the challenge belongs to this event
   if (challenge.eventId.toString() !== eventId) {
     throw new AppError(
-      'Challenge does not belong to this event.',
+      "Challenge does not belong to this event.",
       400,
-      'CHALLENGE_EVENT_MISMATCH'
+      "CHALLENGE_EVENT_MISMATCH",
     );
   }
 
   // Ensure the challenge is enabled
   if (challenge.status !== CHALLENGE_STATUS.ENABLED) {
     throw new AppError(
-      'This challenge is currently disabled.',
+      "This challenge is currently disabled.",
       403,
-      'CHALLENGE_DISABLED'
+      "CHALLENGE_DISABLED",
     );
   }
 
   const hiddenCode = challenge.hiddenCode;
-  
+
   logger.info(
     `[EXECUTION] Participant executing challenge "${challenge.title}" (${challengeId}) ` +
-    `in event "${event.name}" (${eventId})`
+      `in event "${event.name}" (${eventId})`,
   );
 
   const startTime = Date.now();
@@ -153,7 +166,7 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
 
   logger.info(
     `[EXECUTION COMPLETE] Challenge "${challenge.title}" (${challengeId}) — ` +
-    `success=${result.success}, time=${executionTimeMs}ms`
+      `success=${result.success}, time=${executionTimeMs}ms`,
   );
 
   const isQualified = qualifyOutput(challenge, result.output);
@@ -164,10 +177,14 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
     result.output !== undefined &&
     String(result.output).trim().length > 0 &&
     !result.error &&
-    isQualified
+    isQualified,
   );
 
-  const evaluation = evaluationService.evaluateOutput(result.output, challenge, isExecutionSuccessful);
+  const evaluation = evaluationService.evaluateOutput(
+    result.output,
+    challenge,
+    isExecutionSuccessful,
+  );
 
   // At this point the only way isExecutionSuccessful is false without a
   // worker-reported error is a genuinely empty/missing output, since
@@ -175,14 +192,23 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
   // Computed BEFORE Attempt.create (rather than after, as previously) so
   // the persisted record can capture the same status/error the participant
   // response reports — the two were drifting apart otherwise.
-  const executionError = !isExecutionSuccessful && !result.error
-    ? {
-        code: 'NO_OUTPUT',
-        message: 'The function executed but produced no output. Please verify your input format.',
-      }
-    : result.error;
+  const executionError =
+    !isExecutionSuccessful && !result.error
+      ? {
+          code: "UNQUALIFIED_OUTPUT",
+          message:
+            result.output === "[]"
+              ? "No matching solution found for this input. Please enter valid input matching the challenge requirements."
+              : result.output === "false"
+                ? "The test input evaluated to false. Enter a valid test case that satisfies the challenge requirements."
+                : "Execution completed but output does not meet challenge solution requirements.",
+        }
+      : result.error;
 
-  const attemptStatus = mapToAttemptStatus(isExecutionSuccessful, executionError);
+  const attemptStatus = mapToAttemptStatus(
+    isExecutionSuccessful,
+    executionError,
+  );
 
   let attempt;
   try {
@@ -191,7 +217,7 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
       eventId,
       challengeId,
       input: userInput,
-      output: result.output || '',
+      output: result.output || "",
       success: isExecutionSuccessful,
       status: attemptStatus,
       error: executionError ? executionError.message : null,
@@ -200,21 +226,15 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
       executionTime: executionTimeMs,
     });
   } catch (err) {
-    logger.error(`[ATTEMPT_SAVE_FAILED] Failed to save attempt: ${err.message}`);
-    throw new AppError('Execution succeeded, but attempt could not be saved.', 500, 'ATTEMPT_SAVE_FAILED');
+    logger.error(
+      `[ATTEMPT_SAVE_FAILED] Failed to save attempt: ${err.message}`,
+    );
+    throw new AppError(
+      "Execution succeeded, but attempt could not be saved.",
+      500,
+      "ATTEMPT_SAVE_FAILED",
+    );
   }
-
-  const executionError = !isExecutionSuccessful && !result.error
-    ? {
-        code: 'UNQUALIFIED_OUTPUT',
-        message:
-          result.output === '[]'
-            ? 'No matching solution found for this input. Please enter valid input matching the challenge requirements.'
-            : result.output === 'false'
-            ? 'The test input evaluated to false. Enter a valid test case that satisfies the challenge requirements.'
-            : 'Execution completed but output does not meet challenge solution requirements.',
-      }
-    : result.error;
 
   return {
     attempt: {
@@ -237,7 +257,7 @@ const executeChallenge = async (participantId, eventId, challengeId, userInput =
       executionTimeMs,
       challengeId,
       challengeTitle: challenge.title,
-    }
+    },
   };
 };
 

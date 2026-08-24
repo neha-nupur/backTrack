@@ -13,31 +13,42 @@
 
 @layer base {
   body {
-    font-family: 'Inter', sans-serif;
-    cursor: none; /* For custom cursor */
+    font-family: "Inter", sans-serif;
   }
 
-  code, pre, .font-mono {
-    font-family: 'Fira Code', monospace;
+  code,
+  pre,
+  .font-mono {
+    font-family: "Fira Code", monospace;
   }
 }
 
 @layer utilities {
   .glowing-text {
-    text-shadow: 0 0 20px rgba(200, 159, 83, 0.5), 0 0 40px rgba(232, 200, 114, 0.3);
+    text-shadow:
+      0 0 20px rgba(200, 159, 83, 0.5),
+      0 0 40px rgba(232, 200, 114, 0.3);
   }
-  
+
   /* Cinematic Background */
   .cinematic-bg {
     background-color: #0b1221;
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(200, 159, 83, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 50% 100%, rgba(232, 200, 114, 0.1) 0%, transparent 50%);
+    background-image:
+      radial-gradient(
+        circle at 50% 0%,
+        rgba(200, 159, 83, 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 50% 100%,
+        rgba(232, 200, 114, 0.1) 0%,
+        transparent 50%
+      );
   }
-  
+
   /* Grid Texture */
   .tech-grid {
-    background-image: 
+    background-image:
       linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 30px 30px;
@@ -45,14 +56,28 @@
 
   /* Animations */
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
-  .animate-float { animation: float 6s ease-in-out infinite; }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
 
   @keyframes pulse-glow {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(1.05); }
+    0%,
+    100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
   }
   .ambient-glow {
     position: absolute;
@@ -63,19 +88,47 @@
   }
 
   /* Staggered Entrance */
-  .stagger-1 { opacity: 0; animation: fadeUp 0.8s ease forwards 0.2s; }
-  .stagger-2 { opacity: 0; animation: fadeUp 0.8s ease forwards 0.4s; }
-  .stagger-3 { opacity: 0; animation: fadeUp 0.8s ease forwards 0.6s; }
-  .stagger-4 { opacity: 0; animation: fadeUp 0.8s ease forwards 0.8s; }
-  .stagger-5 { opacity: 0; animation: fadeUp 0.8s ease forwards 1.0s; }
-  .stagger-6 { opacity: 0; animation: fadeUp 0.8s ease forwards 1.2s; }
+  .stagger-1 {
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+  .stagger-2 {
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+  .stagger-3 {
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+  }
+  .stagger-4 {
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.8s;
+  }
+  .stagger-5 {
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1s;
+  }
+  .stagger-6 {
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1.2s;
+  }
 
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* Custom Cursor */
+  .custom-cursor-active {
+    cursor: none;
+  }
+
   .cursor-dot {
     width: 8px;
     height: 8px;
@@ -85,7 +138,10 @@
     pointer-events: none;
     z-index: 9999;
     transform: translate(-50%, -50%);
-    transition: width 0.2s, height 0.2s, background-color 0.2s;
+    transition:
+      width 0.2s,
+      height 0.2s,
+      background-color 0.2s;
   }
   .cursor-ring {
     width: 32px;
@@ -96,15 +152,21 @@
     pointer-events: none;
     z-index: 9998;
     transform: translate(-50%, -50%);
-    transition: width 0.3s, height 0.3s, border-color 0.3s, transform 0.1s ease-out;
+    transition:
+      width 0.3s,
+      height 0.3s,
+      border-color 0.3s,
+      transform 0.1s ease-out;
   }
-  
-  a:hover ~ .cursor-dot, button:hover ~ .cursor-dot {
+
+  a:hover ~ .cursor-dot,
+  button:hover ~ .cursor-dot {
     width: 12px;
     height: 12px;
     background: var(--color-brand-gold);
   }
-  a:hover ~ .cursor-ring, button:hover ~ .cursor-ring {
+  a:hover ~ .cursor-ring,
+  button:hover ~ .cursor-ring {
     width: 48px;
     height: 48px;
     border-color: var(--color-brand-gold-light);
