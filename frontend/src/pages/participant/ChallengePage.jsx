@@ -332,17 +332,6 @@ const ChallengePage = () => {
     }
   };
 
-  const handleKeyDown = (e) => {
-    // Run on Ctrl+Enter / Cmd+Enter or Enter without Shift
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      e.preventDefault();
-      handleExecute();
-    } else if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleExecute();
-    }
-  };
-
   const copyToClipboard = (text, index) => {
     if (!text) return;
     navigator.clipboard.writeText(text);
@@ -619,55 +608,6 @@ const ChallengePage = () => {
             )}
           </div>
 
-          {/* Path Overview Gauge */}
-          <div className="p-4 border-t border-slate-800/70 bg-[#040c17]/60 shrink-0">
-            <div className="bg-[#071527]/70 border border-slate-800/80 rounded-2xl p-4 text-center space-y-3">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 block font-bold">
-                PATH OVERVIEW
-              </span>
-
-              {/* Circular Gauge */}
-              <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  {/* Background Circle */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="#0f2238"
-                    strokeWidth="8"
-                  />
-                  {/* Progress Arc */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="#00e5ff"
-                    strokeWidth="8"
-                    strokeDasharray={251.2}
-                    strokeDashoffset={251.2 - (251.2 * solvedPercentage) / 100}
-                    strokeLinecap="round"
-                    className="transition-all duration-700 ease-out"
-                    style={{ filter: "drop-shadow(0 0 6px #00e5ff)" }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
-                  <span className="text-sm font-black text-white">
-                    {solvedChallengeIds.size}/{challenges.length}
-                  </span>
-                  <span className="text-[9px] text-slate-400 uppercase">Solved</span>
-                </div>
-              </div>
-
-              <p className="text-[10px] text-slate-400 font-mono leading-relaxed">
-                Trace the logic. Reverse the pattern.{" "}
-                <span className="text-cyan-400 font-semibold">Conquer</span> the black box.
-              </p>
-            </div>
-          </div>
-
           {/* Bottom Nav Icons */}
           <div className="p-3 border-t border-slate-800/70 flex items-center justify-around text-slate-400 bg-[#040c17]/90 shrink-0">
             <button
@@ -832,7 +772,6 @@ const ChallengePage = () => {
                         setUserInput(e.target.value);
                         if (inputError) setInputError(null);
                       }}
-                      onKeyDown={handleKeyDown}
                       placeholder="Type your input here (e.g. 5, hello, [1, 2, 3])..."
                       className="flex-1 w-full bg-[#030914] border border-slate-800/90 rounded-xl p-4 text-xs sm:text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/30 transition resize-none leading-relaxed min-h-0"
                       spellCheck="false"
@@ -840,7 +779,6 @@ const ChallengePage = () => {
 
                     <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 font-mono shrink-0">
                       <span>{userInput.length} / 10,000 chars</span>
-                      <span className="hidden sm:inline text-cyan-400/80">Press Enter to run</span>
                     </div>
                   </div>
 

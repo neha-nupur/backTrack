@@ -42,6 +42,13 @@ export const deleteParticipant = async (id) => {
   return await apiClient.delete(`/admin/participants/${id}`);
 };
 
+/**
+ * Bulk import participants from JSON array
+ */
+export const importParticipants = async (participantsArray) => {
+  return await apiClient.post('/admin/participants/import', participantsArray);
+};
+
 export default {
   listParticipants,
   getParticipantById,
@@ -49,4 +56,5 @@ export default {
   updateParticipant,
   updateParticipantStatus,
   deleteParticipant,
+  importParticipants,
 };

@@ -1,6 +1,7 @@
 const Participant = require('../models/Participant');
 const AppError = require('../utils/appError');
 const { PARTICIPANT_STATUS } = require('../constants/status');
+const bcrypt = require('bcryptjs');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -167,6 +168,65 @@ const deleteParticipant = async (id) => {
   return { id: participant._id, email: participant.email, name: participant.name };
 };
 
+/**
+ * Bulk create participants from JSON import
+ */
+const bulkCreateParticipants = async (participantsArray) => {
+  let importedCount = 0;
+  let skippedCount = 0;
+  const errors = [];
+  const results = [];
+
+  for (let i = 0; i < participantsArray.length; i++) {
+    const item = participantsArray[i];
+    const { name, email, password } = item;
+    
+    if (!name || !email || !password) {
+      skippedCount++;
+      errors.push({ email: email || `Row ${i+1}`, reason: 'Missing required fields (name, email, password)' });
+      continue;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    try {
+      // Check if participant exists
+      const existing = await Participant.findOne({ email: normalizedEmail });
+      if (existing) {
+        skippedCount++;
+        errors.push({ email: normalizedEmail, reason: 'Participant already exists' });
+        continue;
+      }
+
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(password, salt);
+
+      // Create participant
+      const participant = await Participant.create({
+        name: name.trim(),
+        email: normalizedEmail,
+        passwordHash,
+        status: PARTICIPANT_STATUS.ACTIVE,
+      });
+
+      results.push(formatParticipant(participant));
+      importedCount++;
+    } catch (err) {
+      skippedCount++;
+      errors.push({ email: normalizedEmail, reason: err.message || 'Database error' });
+    }
+  }
+
+  return {
+    total: participantsArray.length,
+    imported: importedCount,
+    skipped: skippedCount,
+    errors,
+    results,
+  };
+};
+
 module.exports = {
   listParticipants,
   getParticipantById,
@@ -174,4 +234,5 @@ module.exports = {
   updateParticipant,
   updateParticipantStatus,
   deleteParticipant,
+  bulkCreateParticipants,
 };

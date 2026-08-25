@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../../layouts/AdminLayout';
 import ParticipantFormModal from '../../components/admin/ParticipantFormModal';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
+import ImportParticipantsModal from '../../components/admin/ImportParticipantsModal';
 import {
   listParticipants,
   createParticipant,
   updateParticipant,
   updateParticipantStatus,
   deleteParticipant,
+  importParticipants,
 } from '../../services/participantService';
 
 const ParticipantsPage = () => {
@@ -21,6 +23,7 @@ const ParticipantsPage = () => {
 
   // Modal States
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', data: null, error: null, isLoading: false });
+  const [importModal, setImportModal] = useState({ isOpen: false, isLoading: false });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, participant: null, isLoading: false });
   const [statusDialog, setStatusDialog] = useState({ isOpen: false, participant: null, newStatus: null, isLoading: false });
 
@@ -96,6 +99,23 @@ const ParticipantsPage = () => {
     }
   };
 
+  const handleImportSubmit = async (participantsArray, closePreviewModal) => {
+    setImportModal((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const res = await importParticipants(participantsArray);
+      if (res.success && res.data) {
+        const { total, imported, skipped } = res.data;
+        setSuccessMessage(`Import completed: ${total} records processed. ${imported} successfully imported. ${skipped} skipped (e.g. existing or invalid).`);
+        closePreviewModal();
+        setImportModal({ isOpen: false, isLoading: false });
+        fetchParticipants(1); // refresh to first page to see newly added
+      }
+    } catch (err) {
+      setError(err.message || 'Bulk import failed.');
+      setImportModal((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // Trigger Status Toggle
   const handleToggleStatusClick = (participant) => {
     const newStatus = participant.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
@@ -148,13 +168,21 @@ const ParticipantsPage = () => {
               Manage participant records, provision passwords, and control student access to competitions.
             </p>
           </div>
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-700 to-cyan-600 hover:from-blue-600 hover:to-cyan-500 text-white rounded-xl text-xs font-mono font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition shrink-0 cursor-pointer"
-          >
-            <span className="text-base font-bold">+</span>
-            <span>Add Participant</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <button
+              onClick={() => setImportModal({ ...importModal, isOpen: true })}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl text-xs font-mono font-bold transition shrink-0 cursor-pointer"
+            >
+              <span>📥 Import JSON</span>
+            </button>
+            <button
+              onClick={handleOpenAddModal}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-700 to-cyan-600 hover:from-blue-600 hover:to-cyan-500 text-white rounded-xl text-xs font-mono font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition shrink-0 cursor-pointer"
+            >
+              <span className="text-base font-bold">+</span>
+              <span>Add Participant</span>
+            </button>
+          </div>
         </div>
 
         {/* Alerts & Notifications */}
@@ -384,6 +412,13 @@ const ParticipantsPage = () => {
         isLoading={statusDialog.isLoading}
         onConfirm={handleConfirmStatusToggle}
         onCancel={() => setStatusDialog({ isOpen: false, participant: null, newStatus: null, isLoading: false })}
+      />
+      {/* Import Participants Modal */}
+      <ImportParticipantsModal
+        isOpen={importModal.isOpen}
+        isLoading={importModal.isLoading}
+        onClose={() => setImportModal({ isOpen: false, isLoading: false })}
+        onImport={handleImportSubmit}
       />
     </AdminLayout>
   );

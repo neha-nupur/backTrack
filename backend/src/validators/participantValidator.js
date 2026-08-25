@@ -180,6 +180,24 @@ const validateListQuery = (req, res, next) => {
   next();
 };
 
+/**
+ * Validate Bulk Import Request
+ */
+const validateBulkImport = (req, res, next) => {
+  const participants = req.body;
+
+  if (!Array.isArray(participants)) {
+    return next(new AppError('Payload must be a JSON array of participants.', 400, 'INVALID_PAYLOAD'));
+  }
+
+  if (participants.length === 0) {
+    return next(new AppError('Participant array cannot be empty.', 400, 'EMPTY_ARRAY'));
+  }
+
+  // Basic validation for the array format, detailed validation is handled in the service
+  next();
+};
+
 module.exports = {
   validateObjectId,
   validateCreateParticipant,
@@ -187,4 +205,5 @@ module.exports = {
   validateStatusUpdate,
   validateMasterPasswordUpdate,
   validateListQuery,
+  validateBulkImport,
 };

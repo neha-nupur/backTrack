@@ -81,18 +81,25 @@ const authenticateParticipant = async (email, password) => {
     throw new AppError('This participant account is disabled.', 401, 'ACCOUNT_DISABLED');
   }
 
-  const masterHash = await getMasterPasswordHash();
+  let isPasswordValid = false;
 
-  let isMasterPasswordValid = false;
-
-  if (masterHash) {
-    isMasterPasswordValid = await bcrypt.compare(password, masterHash);
-  } else {
-    // Development fallback if hash is missing from both DB and environment
-    isMasterPasswordValid = password === 'EVENT@2026';
+  // First, check if the participant has an individual password hash
+  if (participant.passwordHash) {
+    isPasswordValid = await bcrypt.compare(password, participant.passwordHash);
   }
 
-  if (!isMasterPasswordValid) {
+  // If the individual password is not valid or not set, fall back to the master password
+  if (!isPasswordValid) {
+    const masterHash = await getMasterPasswordHash();
+    if (masterHash) {
+      isPasswordValid = await bcrypt.compare(password, masterHash);
+    } else {
+      // Development fallback if hash is missing from both DB and environment
+      isPasswordValid = password === 'EVENT@2026';
+    }
+  }
+
+  if (!isPasswordValid) {
     throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS');
   }
 

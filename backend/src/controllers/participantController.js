@@ -105,6 +105,25 @@ const remove = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/admin/participants/import
+ * Bulk import participants from JSON
+ */
+const importParticipants = async (req, res, next) => {
+  try {
+    const participants = req.body;
+    const result = await participantService.bulkCreateParticipants(participants);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Bulk import processed',
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   list,
   getById,
@@ -112,4 +131,5 @@ module.exports = {
   update,
   updateStatus,
   remove,
+  importParticipants,
 };

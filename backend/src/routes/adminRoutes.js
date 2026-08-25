@@ -15,6 +15,7 @@ const {
   validateStatusUpdate: validateParticipantStatusUpdate,
   validateMasterPasswordUpdate,
   validateListQuery: validateParticipantListQuery,
+  validateBulkImport,
 } = require('../validators/participantValidator');
 const {
   validateEventId,
@@ -37,6 +38,7 @@ router.use(authenticate, authorize(ROLES.ADMIN));
 
 // --- Participant Management Endpoints ---
 router.get('/participants', validateParticipantListQuery, participantController.list);
+router.post('/participants/import', validateBulkImport, participantController.importParticipants);
 router.get('/participants/:id', validateObjectId, participantController.getById);
 router.post('/participants', validateCreateParticipant, participantController.create);
 router.patch('/participants/:id', validateObjectId, validateUpdateParticipant, participantController.update);
