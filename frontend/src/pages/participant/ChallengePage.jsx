@@ -48,6 +48,9 @@ const ChallengePage = () => {
   const { participantUser, user } = useAuth();
   const currentUser = participantUser || user;
 
+  // Track whether the event has ended (timer hit zero)
+  const [eventEnded, setEventEnded] = useState(false);
+
   // Challenge list state
   const [challenges, setChallenges] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,8 +122,14 @@ const ChallengePage = () => {
       return undefined;
     }
 
-    const syncTimer = () =>
-      setTimeRemainingMs(getTimeRemainingMs(eventEndTime));
+    const syncTimer = () => {
+      const remaining = getTimeRemainingMs(eventEndTime);
+      setTimeRemainingMs(remaining);
+      // When timer hits zero, mark event as ended
+      if (remaining <= 0) {
+        setEventEnded(true);
+      }
+    };
     syncTimer();
 
     const intervalId = window.setInterval(syncTimer, 1000);
@@ -262,7 +271,7 @@ const ChallengePage = () => {
   };
 
   const handleExecute = async () => {
-    if (!selectedChallenge || isExecuting) return;
+    if (!selectedChallenge || isExecuting || eventEnded) return;
 
     const trimmedInput = (userInput || "").trim();
     if (!trimmedInput) {
@@ -388,11 +397,17 @@ const ChallengePage = () => {
           </div>
 
           {/* Countdown timer */}
-          {timeRemainingMs > 0 && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#091a32] border border-slate-700/60 text-slate-300">
-              <span className="text-slate-500 uppercase text-[10px]">Timer</span>
-              <span className="font-bold text-cyan-400">
-                {formatCountdown(timeRemainingMs)}
+          {eventEndTime && (
+            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+              eventEnded
+                ? 'bg-red-950/60 border-red-700/60 text-red-300'
+                : 'bg-[#091a32] border-slate-700/60 text-slate-300'
+            }`}>
+              <span className={`uppercase text-[10px] ${eventEnded ? 'text-red-400' : 'text-slate-500'}`}>
+                {eventEnded ? '⏱ Ended' : 'Timer'}
+              </span>
+              <span className={`font-bold ${eventEnded ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
+                {eventEnded ? "TIME'S UP" : formatCountdown(timeRemainingMs)}
               </span>
             </div>
           )}
@@ -413,6 +428,83 @@ const ChallengePage = () => {
           </div>
         </div>
       </header>
+
+      {/* ── EVENT ENDED FULL-SCREEN OVERLAY ── */}
+      {eventEnded && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#030712]/95 backdrop-blur-md">
+          <div className="relative max-w-lg w-full mx-4">
+            {/* Glowing border effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-red-600/30 via-orange-500/20 to-red-600/30 rounded-3xl blur-xl animate-pulse" />
+            
+            <div className="relative bg-[#0a1628]/95 border border-red-800/60 rounded-3xl p-10 text-center space-y-6 shadow-2xl overflow-hidden">
+              {/* Top accent line */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+              
+              {/* Animated icon */}
+              <div className="relative mx-auto w-24 h-24">
+                <div className="absolute inset-0 rounded-full bg-red-500/10 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-red-950 to-[#0a1628] border-2 border-red-500/50 flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+                  <span className="text-5xl">⏱️</span>
+                </div>
+              </div>
+
+              {/* Title */}
+              <div>
+                <h2 className="text-3xl font-black text-white font-mono tracking-tight mb-2"
+                    style={{ textShadow: '0 0 20px rgba(239,68,68,0.3)' }}>
+                  EVENT ENDED
+                </h2>
+                <div className="w-20 h-0.5 bg-gradient-to-r from-transparent via-red-500/60 to-transparent mx-auto" />
+              </div>
+
+              {/* Message */}
+              <div className="space-y-2">
+                <p className="text-sm text-slate-300 font-sans leading-relaxed">
+                  The event timer has reached <span className="text-red-400 font-bold font-mono">00:00:00</span>.
+                </p>
+                <p className="text-xs text-slate-400 font-sans">
+                  All challenge submissions are now closed. Your previous attempts have been recorded.
+                </p>
+              </div>
+
+              {/* Stats summary */}
+              <div className="flex items-center justify-center gap-6 py-3">
+                <div className="text-center">
+                  <span className="block text-2xl font-black text-cyan-400 font-mono">{solvedChallengeIds.size}</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Solved</span>
+                </div>
+                <div className="w-px h-10 bg-slate-700/60" />
+                <div className="text-center">
+                  <span className="block text-2xl font-black text-slate-300 font-mono">{challenges.length}</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Total</span>
+                </div>
+                <div className="w-px h-10 bg-slate-700/60" />
+                <div className="text-center">
+                  <span className="block text-2xl font-black text-amber-400 font-mono">{executionHistory.length}</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Attempts</span>
+                </div>
+              </div>
+
+              {/* Return button */}
+              <button
+                onClick={() => navigate('/participant/dashboard')}
+                className="px-8 py-3.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-mono font-bold text-sm tracking-wider uppercase rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(239,68,68,0.4)] hover:shadow-[0_0_35px_rgba(239,68,68,0.6)] flex items-center justify-center gap-3 mx-auto cursor-pointer active:scale-95"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M19 12H5" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                <span>Return to Dashboard</span>
+              </button>
+
+              {/* Bottom subtle text */}
+              <p className="text-[10px] text-slate-500 font-mono">
+                backTrack — Trace • Reverse • Conquer
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── MAIN WORKSPACE ── */}
       <div className="relative z-10 flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
@@ -756,7 +848,7 @@ const ChallengePage = () => {
                   <div className="p-4 border-t border-slate-800/70 bg-[#061224]/80 shrink-0">
                     <button
                       onClick={handleExecute}
-                      disabled={isExecuting}
+                      disabled={isExecuting || eventEnded}
                       className="w-full py-3 bg-gradient-to-r from-[#0066ff] to-[#00c2ff] hover:from-[#0055ee] hover:to-[#00b0ee] text-white font-mono font-bold text-xs sm:text-sm tracking-widest uppercase rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(0,140,255,0.45)] hover:shadow-[0_0_30px_rgba(0,180,255,0.6)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                     >
                       {isExecuting ? (
