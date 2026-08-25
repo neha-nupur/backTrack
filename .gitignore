@@ -16,6 +16,7 @@ dist/
 build/
 out/
 .vite/
+.vercel/
 
 # Logs
 logs/
