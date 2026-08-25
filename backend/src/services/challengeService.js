@@ -3,6 +3,52 @@ const Event = require('../models/Event');
 const AppError = require('../utils/appError');
 const logger = require('../utils/logger');
 const { CHALLENGE_STATUS } = require('../constants/status');
+const { FORBIDDEN_PATTERNS } = require('./codeExecutor/validator');
+
+/**
+ * Validate that hiddenCode does not contain patterns forbidden by the sandbox.
+ * Throws an AppError with a clear explanation if any are found.
+ * 
+ * Challenge hidden code must be a pure JavaScript function — Node.js built-ins
+ * like require('fs'), process.stdout, and process.stdin are not available in
+ * the isolated VM context and will cause a FORBIDDEN_OPERATION error at runtime.
+ */
+const validateHiddenCode = (hiddenCode) => {
+  if (!hiddenCode || typeof hiddenCode !== 'string') return;
+
+  const DESCRIPTIVE_FORBIDDEN = [
+    { pattern: /require\s*\(\s*['"`]fs['"`]\s*\)/, label: "require('fs')" },
+    { pattern: /require\s*\(\s*['"`]child_process['"`]\s*\)/, label: "require('child_process')" },
+    { pattern: /require\s*\(\s*['"`]net['"`]\s*\)/, label: "require('net')" },
+    { pattern: /require\s*\(\s*['"`]http['"`]\s*\)/, label: "require('http')" },
+    { pattern: /require\s*\(\s*['"`]https['"`]\s*\)/, label: "require('https')" },
+    { pattern: /require\s*\(\s*['"`]dgram['"`]\s*\)/, label: "require('dgram')" },
+    { pattern: /require\s*\(\s*['"`]cluster['"`]\s*\)/, label: "require('cluster')" },
+    { pattern: /require\s*\(\s*['"`]worker_threads['"`]\s*\)/, label: "require('worker_threads')" },
+    { pattern: /require\s*\(\s*['"`]vm['"`]\s*\)/, label: "require('vm')" },
+    { pattern: /require\s*\(\s*['"`]os['"`]\s*\)/, label: "require('os')" },
+    { pattern: /process\.exit/, label: 'process.exit' },
+    { pattern: /process\.env/, label: 'process.env' },
+    { pattern: /process\.kill/, label: 'process.kill' },
+    { pattern: /process\.stdout/, label: 'process.stdout' },
+    { pattern: /process\.stdin/, label: 'process.stdin' },
+    { pattern: /globalThis/, label: 'globalThis' },
+  ];
+
+  const found = DESCRIPTIVE_FORBIDDEN
+    .filter(({ pattern }) => pattern.test(hiddenCode))
+    .map(({ label }) => label);
+
+  if (found.length > 0) {
+    throw new AppError(
+      `Hidden code contains patterns forbidden in the sandbox executor: ${found.join(', ')}. ` +
+      'Challenge code must be a pure JavaScript function without Node.js built-ins. ' +
+      'Remove these patterns and use only standard JS (Array, Math, String, etc.).',
+      400,
+      'HIDDEN_CODE_FORBIDDEN_PATTERNS'
+    );
+  }
+};
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
@@ -59,6 +105,8 @@ const createChallenge = async (eventId, {
   hackerRankUrl = '',
   status = CHALLENGE_STATUS.ENABLED,
 }) => {
+  // Validate hiddenCode before saving — forbidden patterns cause FORBIDDEN_OPERATION at runtime
+  validateHiddenCode(hiddenCode);
   // Ensure the target event exists
   const event = await Event.findById(eventId);
   if (!event) {
@@ -180,7 +228,11 @@ const updateChallenge = async (id, fields) => {
 
   if (fields.title !== undefined) challenge.title = fields.title.trim();
   if (fields.description !== undefined) challenge.description = fields.description.trim();
-  if (fields.hiddenCode !== undefined) challenge.hiddenCode = fields.hiddenCode;
+  if (fields.hiddenCode !== undefined) {
+    // Validate hiddenCode before saving — forbidden patterns cause FORBIDDEN_OPERATION at runtime
+    validateHiddenCode(fields.hiddenCode);
+    challenge.hiddenCode = fields.hiddenCode;
+  }
   if (fields.inputFormat !== undefined) challenge.inputFormat = fields.inputFormat ? fields.inputFormat.trim() : '';
   if (fields.outputFormat !== undefined) challenge.outputFormat = fields.outputFormat ? fields.outputFormat.trim() : '';
   if (fields.constraints !== undefined) challenge.constraints = fields.constraints ? fields.constraints.trim() : '';
