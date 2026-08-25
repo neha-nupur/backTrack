@@ -149,7 +149,7 @@ const parseInputToArgs = (rawInput, expectedArgCount = 1) => {
   const parseToken = (str) => {
     const s = String(str || '').trim();
     if (!s) return s;
-    try { return JSON.parse(s); } catch (e) {}
+    try { return JSON.parse(s); } catch (e) { }
     if (s.includes(' ') || s.includes(',')) {
       const parts = s.split(/[,\\s]+/).map(p => p.trim()).filter(Boolean);
       if (parts.length > 1 && parts.every(p => !isNaN(p))) {
@@ -171,14 +171,14 @@ const parseInputToArgs = (rawInput, expectedArgCount = 1) => {
     if (expectedArgCount === 1) {
       return [parsed];
     }
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const wrapped = JSON.parse('[' + trimmed + ']');
     if (Array.isArray(wrapped) && wrapped.length > 1) {
       return wrapped;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const lines = trimmed.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length > 1) {
@@ -249,7 +249,23 @@ const buildExecutableScript = (code) => {
     }
     // Only accept declarations at the top level (not nested inside another
     // function/block) as candidates for the entry point.
-    if (depth === 0) {
+    //
+    // IMPORTANT: Take the FIRST top-level declaration, not the last.
+    // Challenge authors write the actual solution function (the pattern
+    // being tested, e.g. `twoSum`) first, and sometimes append a second
+    // top-level helper afterwards purely for their own input-parsing/
+    // validation convenience (e.g. `executeChallenge`, which re-parses a
+    // rigid "n nums target" string format). Overwriting targetFnName on
+    // every match meant that second helper — not the real solution — was
+    // always chosen as the entry point, since it appears later in the
+    // source. That caused the wrapper to invoke the strict helper instead
+    // of the actual challenge logic, so any normal-shaped participant
+    // input (e.g. "[2,7,11,15], 9") failed even though the real solution
+    // function would have handled it correctly. Keeping only the first
+    // candidate restores the actual challenge pattern as the entry point,
+    // while remaining a no-op for the common case of a single top-level
+    // function.
+    if (depth === 0 && !targetFnName) {
       targetFnName = match[1] || match[2];
     }
   }
@@ -312,14 +328,14 @@ ${code}
       // Input Format Validation for Array/Numeric functions vs Parentheses functions
       const _fnName = "${targetFnName}";
       if (_fnName === 'twoSum' || _fnName === 'singleNumber') {
-        if (/[a-zA-Z]/.test(_trimmed) && !/^\s*\[.*\]\s*$/.test(_trimmed)) {
+        if (/[a-zA-Z]/.test(_trimmed) && !/^\\s*\\[.*\\]\\s*$/.test(_trimmed)) {
           console.log("__INVALID_INPUT_FORMAT: Invalid Input Format: This challenge expects an array of numbers (e.g., [2, 7, 11, 15] or 4 1 2 1 2).");
           return;
         }
       }
 
       if (_fnName === 'isValid') {
-        if (/[^\(\)\[\]\{\}\s'"]/g.test(_trimmed)) {
+        if (/[^\\(\\)\\[\\]\\{\\}\\s'"]/g.test(_trimmed)) {
           console.log("__INVALID_INPUT_FORMAT: Invalid Input Format: Input must consist only of bracket characters ()[]{}.");
           return;
         }
@@ -327,19 +343,30 @@ ${code}
 
       const _args = _parseInputToArgs(_rawIn, _targetFn.length || 1);
       let _res;
+      let _lastErr = null;
       try {
         _res = _targetFn(..._args);
       } catch (err1) {
+        _lastErr = err1;
         try {
           _res = _targetFn(..._args.map(a => typeof a === 'number' ? String(a) : a));
         } catch (err2) {
+          _lastErr = err2;
           try {
             _res = _targetFn(_rawIn);
-          } catch (err3) {}
+          } catch (err3) {
+            _lastErr = err3;
+          }
         }
       }
       if (_res !== undefined && _res !== null) {
         console.log(typeof _res === 'object' ? JSON.stringify(_res) : String(_res));
+      } else if (_lastErr) {
+        // Every call shape we tried was actively rejected by the challenge's
+        // own code (it threw), rather than the function simply producing no
+        // output. Surface that real reason instead of a generic "no output"
+        // message, so the participant knows what to fix.
+        console.log("__EXECUTION_ERROR__: " + (_lastErr && _lastErr.message ? _lastErr.message : String(_lastErr)));
       }
     }
   } catch (err) {}
@@ -397,6 +424,17 @@ const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
       };
     }
 
+    if (outputText.startsWith('__EXECUTION_ERROR__:')) {
+      return {
+        success: false,
+        output: '',
+        error: {
+          code: 'RUNTIME_ERROR',
+          message: outputText.replace('__EXECUTION_ERROR__:', '').trim(),
+        },
+      };
+    }
+
     if (outputText.length === 0) {
       return {
         success: false,
@@ -415,8 +453,8 @@ const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
     };
   } catch (err) {
     // Classify the error WITHOUT leaking hiddenCode content
-    if (err.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT' || 
-        (err.message && err.message.includes('Script execution timed out'))) {
+    if (err.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT' ||
+      (err.message && err.message.includes('Script execution timed out'))) {
       return {
         success: false,
         output: outputBuffer.join('\n'),
@@ -440,7 +478,7 @@ const executeInSandbox = (hiddenCode, userInput, timeoutMs) => {
 
     // Runtime errors (ReferenceError, TypeError, RangeError, etc.)
     const safeMessage = err.message ? String(err.message).substring(0, 200) : 'Unknown runtime error';
-    
+
     return {
       success: false,
       output: outputBuffer.join('\n'),
