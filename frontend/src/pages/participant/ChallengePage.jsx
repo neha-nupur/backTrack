@@ -459,11 +459,6 @@ const ChallengePage = () => {
               {/* Stats summary */}
               <div className="flex items-center justify-center gap-6 py-3">
                 <div className="text-center">
-                  <span className="block text-2xl font-black text-cyan-400 font-mono">{solvedChallengeIds.size}</span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Solved</span>
-                </div>
-                <div className="w-px h-10 bg-slate-700/60" />
-                <div className="text-center">
                   <span className="block text-2xl font-black text-slate-300 font-mono">{challenges.length}</span>
                   <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Total</span>
                 </div>
