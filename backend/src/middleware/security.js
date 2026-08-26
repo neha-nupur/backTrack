@@ -38,14 +38,24 @@ const configureSecurity = (app, express) => {
   app.use(express.json({ limit: "100kb" }));
   app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 
-  // General API Rate Limiting
+  // General API Rate Limiter — Abuse / DDoS catch-all
+  //
+  // BackTrack is a live contest platform where 500+ participants may share a
+  // single public IP (college / company Wi-Fi NAT). A conservative estimate:
+  //   500 users × 200 requests/session = 100,000 requests per 15 minutes.
+  //
+  // This limit is therefore set to 100,000 per IP per 15 minutes. It will
+  // never trigger for legitimate participant usage, but still prevents
+  // genuine bot floods or runaway clients from hammering the server.
+  //
+  // Sensitive auth endpoints (/auth/login, /auth/admin/login) are NOT covered
+  // here — they have their own strict brute-force limiter in authRoutes.js
+  // (30 attempts per 15 minutes) which is applied before this one.
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // limit each IP to 200 requests per windowMs
-    skip: (req) =>
-      req.path === "/auth/login" || req.path === "/auth/admin/login",
-    standardHeaders: true,
-    legacyHeaders: false,
+    max: 100_000,              // 1 lakh requests per IP per 15 min
+    standardHeaders: true,     // Return RateLimit-* headers (RFC 6585)
+    legacyHeaders: false,      // Disable legacy X-RateLimit-* headers
     message: {
       success: false,
       message:
