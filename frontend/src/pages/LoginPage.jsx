@@ -112,9 +112,6 @@ const LoginPage = () => {
                   Participant Access
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 px-2 py-0.5 rounded bg-slate-900/90 border border-slate-800">
-                NODE_AUTH
-              </span>
             </div>
 
             {/* Error Message */}
@@ -136,7 +133,7 @@ const LoginPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="dev@college.edu"
+                  placeholder="Enter your institute email id"
                   required
                   disabled={loading}
                   autoComplete="email"

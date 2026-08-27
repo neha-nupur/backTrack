@@ -8,6 +8,7 @@ import {
 import { getLiveEvents } from "../../services/eventService";
 import { getAttempts } from "../../services/resultService";
 import CyberBackground from "../../components/CyberBackground";
+import mcaLogo from "../../assets/logo.png";
 
 const getTimeRemainingMs = (endTime) => {
   if (!endTime) return 0;
@@ -357,12 +358,12 @@ const ChallengePage = () => {
             className="flex items-center gap-3 group text-left cursor-pointer"
             title="Back to Participant Console"
           >
-            <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 group-hover:border-cyan-400 transition shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-              </svg>
+            <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center overflow-hidden group-hover:border-cyan-400 transition shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+              <img
+                src={mcaLogo}
+                alt="MCA Club Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <span className="text-base font-black tracking-wider text-white font-mono">
@@ -401,18 +402,13 @@ const ChallengePage = () => {
             </div>
           )}
 
-          {/* Participant Name & Avatar */}
+          {/* Participant Name */}
           <div className="flex items-center gap-2.5 pl-2 border-l border-slate-800">
             <div className="text-right hidden sm:block">
               <span className="text-[11px] text-slate-400 font-sans block">Participant:</span>
               <span className="text-xs font-bold text-cyan-300 font-mono">
                 {currentUser?.name || "Participant"}
               </span>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-cyan-950 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
-              </svg>
             </div>
           </div>
         </div>
@@ -588,9 +584,6 @@ const ChallengePage = () => {
                               PASSED
                             </span>
                           )}
-                          {!isSelected && !isSolved && (
-                            <span className="text-slate-600 text-xs">🔒</span>
-                          )}
                         </div>
                         <p className="text-[10px] font-mono text-slate-400 truncate">
                           {isSelected ? "Current Node" : isSolved ? "Completed" : "Black Box"}
@@ -603,42 +596,7 @@ const ChallengePage = () => {
             )}
           </div>
 
-          {/* Bottom Nav Icons */}
-          <div className="p-3 border-t border-slate-800/70 flex items-center justify-around text-slate-400 bg-[#040c17]/90 shrink-0">
-            <button
-              onClick={() => navigate("/participant/dashboard")}
-              className="p-2 hover:text-cyan-400 transition cursor-pointer"
-              title="Dashboard Home"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-            </button>
-            <button className="p-2 text-cyan-400" title="Code Challenges">
-              <span className="font-mono font-bold text-xs">&lt;/&gt;</span>
-            </button>
-            <button
-              onClick={() => navigate("/participant/dashboard")}
-              className="p-2 hover:text-cyan-400 transition cursor-pointer"
-              title="Statistics"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="20" x2="18" y2="10"></line>
-                <line x1="12" y1="20" x2="12" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="14"></line>
-              </svg>
-            </button>
-            <button className="p-2 hover:text-cyan-400 transition" title="Leaderboard">
-              <span className="text-xs">🏆</span>
-            </button>
-            <button className="p-2 hover:text-cyan-400 transition" title="Settings">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
-            </button>
-          </div>
+
         </aside>
 
         {/* ── MAIN WORKSPACE CONTENT AREA ── */}
@@ -732,7 +690,7 @@ const ChallengePage = () => {
               <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
                 
                 {/* ── INPUT TESTER SIDEBAR (Fixed Size, Non-Growing, Pinned Run Button) ── */}
-                <div className="w-full md:w-80 xl:w-96 bg-[#040d1a]/95 border-r border-slate-800/80 flex flex-col shrink-0 h-full overflow-hidden">
+                <div className="w-full md:w-72 lg:w-80 xl:w-96 min-w-0 bg-[#040d1a]/95 border-b md:border-b-0 md:border-r border-slate-800/80 flex flex-col shrink-0 md:h-full overflow-hidden">
                   <div className="px-5 py-3.5 border-b border-slate-800/70 flex items-center justify-between bg-[#061224]/80 shrink-0">
                     <div className="flex items-center gap-2">
                       <span className="text-cyan-400 text-xs">⌨️</span>
@@ -767,7 +725,7 @@ const ChallengePage = () => {
                         setUserInput(e.target.value);
                         if (inputError) setInputError(null);
                       }}
-                      placeholder="Type your input here (e.g. 5, hello, [1, 2, 3])..."
+                      placeholder="Enter your input here"
                       className="flex-1 w-full bg-[#030914] border border-slate-800/90 rounded-xl p-4 text-xs sm:text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/30 transition resize-none leading-relaxed min-h-0"
                       spellCheck="false"
                     />

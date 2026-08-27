@@ -61,6 +61,7 @@ const ParticipantDashboardShell = () => {
       const res = await startEvent(eventId, password);
       setStartStatus((prev) => ({ ...prev, [eventId]: { isLoading: false, error: null, session: res.data } }));
       if (passwordModalEvent) { setPasswordModalEvent(null); setEventPasswordInput(''); }
+      navigate(`/participant/events/${eventId}/challenges`);
     } catch (err) {
       const errMsg = err.message || 'Failed to start event.';
       if (passwordModalEvent) setPasswordError(errMsg);
@@ -278,69 +279,47 @@ const ParticipantDashboardShell = () => {
                       </div>
                     )}
 
-                    {/* Session active state */}
-                    {statusInfo.session ? (
-                      <div className="p-4 bg-cyan-950/30 border border-cyan-700/50 text-cyan-300 text-xs rounded-xl space-y-3">
-                        <div className="flex items-center gap-2 font-bold text-cyan-400 text-sm">
-                          <span>✅</span>
-                          <span>Event Session Active</span>
-                        </div>
-                        <p className="text-slate-300 font-sans">
-                          You have successfully unlocked <span className="font-bold text-white font-mono">{ev.name}</span>.
-                        </p>
-                        <div className="flex justify-center pt-1">
-                          <button
-                            onClick={() => navigate(`/participant/events/${ev.id}/challenges`)}
-                            className="px-6 py-2.5 bg-gradient-to-r from-[#0066ff] to-[#00c2ff] hover:from-[#0055ee] hover:to-[#00b0ee] text-white text-xs font-mono font-bold rounded-xl shadow-[0_0_20px_rgba(0,140,255,0.4)] transition flex items-center gap-2 cursor-pointer"
-                          >
-                            <span>🚀</span>
-                            <span>Open backTrack Terminal &rarr;</span>
-                          </button>
-                        </div>
+                    {/* ── Status Text & Start Event Button in the Middle ── */}
+                    <div className="flex flex-col items-center justify-center gap-4 pt-1">
+                      {/* Status text */}
+                      <div className="text-xs text-slate-400 font-sans text-center">
+                        {isBeforeStart ? (
+                          <span className="text-amber-400/90 flex items-center gap-1.5 justify-center">
+                            <span>⏰</span>
+                            <span>Starts at {start.toLocaleTimeString()}</span>
+                          </span>
+                        ) : isAfterEnd ? (
+                          <span className="text-red-400/80">This event has reached its end time.</span>
+                        ) : (
+                          <span className="text-cyan-400 flex items-center gap-2 justify-center font-medium">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                            <span>Session in progress</span>
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      /* ── Status Text & Start Event Button in the Middle ── */
-                      <div className="flex flex-col items-center justify-center gap-4 pt-1">
-                        {/* Status text */}
-                        <div className="text-xs text-slate-400 font-sans text-center">
-                          {isBeforeStart ? (
-                            <span className="text-amber-400/90 flex items-center gap-1.5 justify-center">
-                              <span>⏰</span>
-                              <span>Starts at {start.toLocaleTimeString()}</span>
-                            </span>
-                          ) : isAfterEnd ? (
-                            <span className="text-red-400/80">This event has reached its end time.</span>
-                          ) : (
-                            <span className="text-cyan-400 flex items-center gap-2 justify-center font-medium">
-                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                              <span>Session in progress</span>
-                            </span>
-                          )}
-                        </div>
 
-                        {/* Centered Blue/Cyan Start Event Button (Matching Picture 1) */}
-                        <button
-                          onClick={() => initiateStartEvent(ev)}
-                          disabled={statusInfo.isLoading || isAfterEnd}
-                          className="px-8 py-3 bg-gradient-to-r from-[#0066ff] to-[#00c2ff] hover:from-[#0055ee] hover:to-[#00b0ee] text-white font-mono font-bold text-xs sm:text-sm tracking-wide rounded-xl shadow-[0_0_25px_rgba(0,140,255,0.45)] hover:shadow-[0_0_30px_rgba(0,180,255,0.6)] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                        >
-                          {statusInfo.isLoading ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                              </svg>
-                              <span>Starting...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Start Event</span>
-                              <span className="text-cyan-200 font-bold">&rarr;</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
+                      {/* Centered Blue/Cyan Start Event Button (Matching Picture 1) */}
+                      <button
+                        onClick={() => initiateStartEvent(ev)}
+                        disabled={statusInfo.isLoading || isAfterEnd}
+                        className="px-8 py-3 bg-gradient-to-r from-[#0066ff] to-[#00c2ff] hover:from-[#0055ee] hover:to-[#00b0ee] text-white font-mono font-bold text-xs sm:text-sm tracking-wide rounded-xl shadow-[0_0_25px_rgba(0,140,255,0.45)] hover:shadow-[0_0_30px_rgba(0,180,255,0.6)] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                      >
+                        {statusInfo.isLoading ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span>Starting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Start Event</span>
+                            <span className="text-cyan-200 font-bold">&rarr;</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
