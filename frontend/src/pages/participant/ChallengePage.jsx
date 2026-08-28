@@ -574,7 +574,7 @@ const ChallengePage = () => {
                               isSelected ? "text-white" : "text-slate-300"
                             }`}
                           >
-                            Challenge {formattedNum}
+                            {ch.title || `Challenge ${formattedNum}`}
                           </h3>
                           {isSelected && (
                             <span className="text-cyan-400 text-xs">›</span>
@@ -616,10 +616,9 @@ const ChallengePage = () => {
                     </div>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-2xl lg:text-3xl font-black text-white font-mono tracking-tight">
-                        Challenge{" "}
-                        {String(
+                        {selectedChallenge.title || `Challenge ${String(
                           selectedChallenge.challengeNumber || currentChallengeIndex + 1,
-                        ).padStart(2, "0")}
+                        ).padStart(2, "0")}`}
                       </h1>
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-950 text-cyan-300 border border-cyan-800/70">
                         NODE #{String(selectedChallenge.challengeNumber || currentChallengeIndex + 1).padStart(2, "0")}
@@ -716,6 +715,18 @@ const ChallengePage = () => {
                       <span>{inputError}</span>
                     </div>
                   )}
+
+                  {/* Dynamic Format Info */}
+                  <div className="px-5 py-3 border-b border-slate-800/60 bg-[#040d1a] shrink-0">
+                    <div className="mb-2">
+                      <h4 className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mb-1 font-mono">Input Format:</h4>
+                      <div className="text-xs text-slate-300 font-sans whitespace-pre-wrap">{selectedChallenge.inputFormat || "Format not specified"}</div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mb-1 font-mono">Output Format:</h4>
+                      <div className="text-xs text-slate-300 font-sans whitespace-pre-wrap">{selectedChallenge.outputFormat || "Format not specified"}</div>
+                    </div>
+                  </div>
 
                   {/* Textarea */}
                   <div className="flex-1 p-4 flex flex-col min-h-0">

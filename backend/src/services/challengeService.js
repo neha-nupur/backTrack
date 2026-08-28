@@ -4,6 +4,7 @@ const AppError = require('../utils/appError');
 const logger = require('../utils/logger');
 const { CHALLENGE_STATUS } = require('../constants/status');
 const { FORBIDDEN_PATTERNS } = require('./codeExecutor/validator');
+const { deriveIOFormat } = require('../utils/formatInferer');
 
 /**
  * Validate that hiddenCode does not contain patterns forbidden by the sandbox.
@@ -80,15 +81,26 @@ const toAdminChallengeResponse = (doc) => ({
  * Returns ONLY participant-safe fields: id, challengeNumber, inputConstraints, hint, hackerRankUrl, status.
  * Strictly EXCLUDES: title, description, hiddenCode, score, difficulty, solution, expectedOutput, etc.
  */
-const toParticipantChallengeResponse = (doc, index = 0) => ({
-  id: doc._id,
-  eventId: doc.eventId,
-  challengeNumber: index + 1,
-  inputConstraints: doc.constraints || '',
-  hint: doc.hint || '',
-  hackerRankUrl: doc.hackerRankUrl || '',
-  status: doc.status,
-});
+const toParticipantChallengeResponse = (doc, index = 0) => {
+  // Infer formats based on code, but prioritize the explicit formats stored in the database by the admin
+  const inferred = deriveIOFormat(doc.hiddenCode, 'Format not specified', 'Format not specified');
+  
+  const inputFormat = doc.inputFormat ? doc.inputFormat : inferred.inputFormat;
+  const outputFormat = doc.outputFormat ? doc.outputFormat : inferred.outputFormat;
+
+  return {
+    id: doc._id,
+    eventId: doc.eventId,
+    title: doc.title,
+    challengeNumber: index + 1,
+    inputConstraints: doc.constraints || '',
+    hint: doc.hint || '',
+    hackerRankUrl: doc.hackerRankUrl || '',
+    status: doc.status,
+    inputFormat,
+    outputFormat,
+  };
+};
 
 /**
  * Create a new challenge assigned to an event (ADMIN)
