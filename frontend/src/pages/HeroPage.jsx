@@ -51,7 +51,7 @@ const HeroPage = () => {
             </div>
             <div className="font-mono text-xs sm:text-sm px-4 py-2 rounded-xl bg-[#081326]/80 border border-slate-800 text-slate-300 flex items-center gap-2 backdrop-blur-md shadow-inner">
               <span>📅</span>
-              <span>10 September 2026</span>
+              <span>4 September 2026</span>
             </div>
             <div className="font-mono text-xs sm:text-sm px-4 py-2 rounded-xl bg-[#081326]/80 border border-slate-800 text-cyan-300 flex items-center gap-2 backdrop-blur-md shadow-inner">
               <span>🎓</span>

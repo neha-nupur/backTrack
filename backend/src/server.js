@@ -14,19 +14,22 @@ const startServer = async () => {
   if (dbConnected) {
     // Run idempotent admin bootstrapper
     await bootstrapAdmin();
+
     // One-time migration: seed DB master password hash from env if not yet set
     await migrateEnvMasterPassword();
   }
 
   const PORT = env.PORT || 5000;
-  const server = app.listen(PORT, () => {
+
+  const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info(`backTrack API Server successfully running on port ${PORT}`);
-    logger.info(`Health check available at http://localhost:${PORT}/api/health`);
+    logger.info(`Health check available at /api/health`);
   });
 
   // Handle unhandled promise rejections gracefully
   process.on('unhandledRejection', (err) => {
     logger.error('Unhandled Promise Rejection:', err.message);
+
     if (env.NODE_ENV === 'development') {
       console.error(err);
     }
@@ -35,6 +38,7 @@ const startServer = async () => {
   // Handle SIGTERM / SIGINT for graceful shutdown
   process.on('SIGTERM', () => {
     logger.info('SIGTERM received. Shutting down gracefully...');
+
     server.close(() => {
       logger.info('HTTP server closed.');
       process.exit(0);
