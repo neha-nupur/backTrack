@@ -325,7 +325,7 @@ const ChallengePage = () => {
           isCorrect: null,
           score: 0,
           executionTimeMs: exec.executionTimeMs || 0,
-          error: exec.error?.message || null,
+          error: exec.error || null,
           createdAt: new Date().toISOString(),
         };
         const nextHistory = [
@@ -338,7 +338,6 @@ const ChallengePage = () => {
 
         if (
           exec.success &&
-          exec.output &&
           isQualifiedOutput(exec.output) &&
           !exec.error
         ) {
@@ -873,7 +872,12 @@ const ChallengePage = () => {
                                     </span>
                                   )}
                                   <button
-                                    onClick={() => copyToClipboard(entry.output || entry.input, idx)}
+                                    onClick={() => copyToClipboard(
+                                      isQualifiedOutput(entry.output)
+                                        ? String(entry.output)
+                                        : entry.input,
+                                      idx,
+                                    )}
                                     className="p-1.5 text-slate-400 hover:text-cyan-300 bg-[#051121] hover:bg-[#091b35] rounded-lg border border-slate-700/60 transition cursor-pointer"
                                     title="Copy output"
                                   >
@@ -905,11 +909,15 @@ const ChallengePage = () => {
                                   OUT
                                 </span>
                                 <span className={`whitespace-pre-wrap break-all ${
-                                  entry.success && entry.output
+                                  entry.success && isQualifiedOutput(entry.output)
                                     ? "text-cyan-200 font-semibold"
                                     : "text-red-300"
                                 }`}>
-                                  {entry.output || (entry.error ? `${entry.error.code}: ${entry.error.message}` : "No output returned")}
+                                  {isQualifiedOutput(entry.output)
+                                    ? String(entry.output)
+                                    : entry.error
+                                      ? `${entry.error.code}: ${entry.error.message}`
+                                      : "No output returned"}
                                 </span>
                               </div>
                             </div>
