@@ -16,6 +16,7 @@ const ChallengesPage = () => {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
   const [challenges, setChallenges] = useState([]);
+  const [copiedChallengeId, setCopiedChallengeId] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -89,6 +90,16 @@ const ChallengesPage = () => {
   // Open Edit Modal
   const handleOpenEditModal = (challenge) => {
     setModalState({ isOpen: true, mode: 'edit', data: challenge, error: null, isLoading: false });
+  };
+
+  const handleCopyChallengeId = async (challengeId) => {
+    try {
+      await navigator.clipboard.writeText(String(challengeId));
+      setCopiedChallengeId(challengeId);
+      window.setTimeout(() => setCopiedChallengeId(null), 1500);
+    } catch (err) {
+      setError('Unable to copy the challenge ID.');
+    }
   };
 
   // Submit Modal (Create or Edit)
@@ -291,6 +302,7 @@ const ChallengesPage = () => {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-950/60 border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider font-mono">
                   <tr>
+                    <th className="px-6 py-3.5">Challenge ID</th>
                     <th className="px-6 py-3.5">Challenge Title</th>
                     <th className="px-6 py-3.5">Score</th>
                     <th className="px-6 py-3.5">Status</th>
@@ -301,6 +313,22 @@ const ChallengesPage = () => {
                 <tbody className="divide-y divide-slate-800/60">
                   {challenges.map((ch) => (
                     <tr key={ch.id} className="hover:bg-slate-800/40 transition">
+                      <td className="px-6 py-4 align-top">
+                        <div className="flex items-center gap-2">
+                          <code className="max-w-40 truncate text-xs text-cyan-300" title={ch.id}>
+                            {ch.id}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyChallengeId(ch.id)}
+                            title="Copy challenge ID"
+                            aria-label={`Copy challenge ID ${ch.id}`}
+                            className="shrink-0 px-2 py-1 text-[10px] rounded bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-800/60 transition"
+                          >
+                            {copiedChallengeId === ch.id ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <p className="font-semibold text-slate-100">{ch.title}</p>
                         {ch.description && (
