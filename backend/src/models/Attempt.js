@@ -23,7 +23,6 @@ const attemptSchema = new mongoose.Schema(
     },
     input: {
       type: String,
-      default: '',
     },
     output: {
       type: String,

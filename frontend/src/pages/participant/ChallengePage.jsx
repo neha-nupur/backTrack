@@ -6,7 +6,6 @@ import {
   executeChallenge,
 } from "../../services/challengeService";
 import { getLiveEvents } from "../../services/eventService";
-import { getAttempts } from "../../services/resultService";
 import CyberBackground from "../../components/CyberBackground";
 import mcaLogo from "../../assets/logo.png";
 
@@ -41,6 +40,32 @@ const formatAttemptDate = (dateStr) => {
 
 const isQualifiedOutput = (output) => {
   return output !== null && output !== undefined && String(output).trim() !== "";
+};
+
+const getHistoryStorageKey = (eventId, challengeId) =>
+  `blackbox_history_${eventId}_${challengeId}`;
+
+const readLocalHistory = (eventId, challengeId) => {
+  try {
+    const stored = sessionStorage.getItem(
+      getHistoryStorageKey(eventId, challengeId),
+    );
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn("Failed to read local challenge history:", error);
+    return [];
+  }
+};
+
+const writeLocalHistory = (eventId, challengeId, attempts) => {
+  try {
+    sessionStorage.setItem(
+      getHistoryStorageKey(eventId, challengeId),
+      JSON.stringify(attempts),
+    );
+  } catch (error) {
+    console.warn("Failed to save local challenge history:", error);
+  }
 };
 
 const ChallengePage = () => {
@@ -201,28 +226,21 @@ const ChallengePage = () => {
     fetchChallenges();
   }, [fetchChallenges]);
 
-  // Fetch attempts for selected challenge
+  // Load attempts from this browser session instead of MongoDB.
   const fetchAttemptHistory = useCallback(
-    async (challengeId) => {
-      try {
-        const res = await getAttempts(eventId, { challengeId, limit: 30 });
-        if (res.success && res.data) {
-          const attempts = res.data.attempts || [];
-          setExecutionHistory(attempts);
+    (challengeId) => {
+      const attempts = readLocalHistory(eventId, challengeId);
+      setExecutionHistory(attempts);
 
-          const hasValidSuccess = attempts.some(
-            (a) =>
-              a.success === true && a.output && isQualifiedOutput(a.output),
-          );
+      const hasValidSuccess = attempts.some(
+        (attempt) =>
+          attempt.success === true && isQualifiedOutput(attempt.output),
+      );
 
-          if (hasValidSuccess) {
-            markChallengeSolved(challengeId);
-          } else {
-            unmarkChallengeSolved(challengeId);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch attempt history:", err);
+      if (hasValidSuccess) {
+        markChallengeSolved(challengeId);
+      } else {
+        unmarkChallengeSolved(challengeId);
       }
     },
     [eventId, markChallengeSolved, unmarkChallengeSolved],
@@ -295,12 +313,28 @@ const ChallengePage = () => {
 
       if (res.success && res.data?.execution) {
         const exec = res.data.execution;
-        const attempt = res.data.attempt;
-        setExecutionResult({ ...exec, attempt });
-
-        if (attempt) {
-          setExecutionHistory((prev) => [attempt, ...prev.slice(0, 29)]);
-        }
+        const localAttempt = {
+          id: `${selectedChallenge.id}-${Date.now()}`,
+          eventId,
+          challengeId: selectedChallenge.id,
+          challengeTitle: selectedChallenge.title,
+          input: trimmedInput,
+          output: exec.output,
+          success: exec.success,
+          status: exec.success ? "SUCCESS" : "EXECUTION_ERROR",
+          isCorrect: null,
+          score: 0,
+          executionTimeMs: exec.executionTimeMs || 0,
+          error: exec.error?.message || null,
+          createdAt: new Date().toISOString(),
+        };
+        const nextHistory = [
+          localAttempt,
+          ...readLocalHistory(eventId, selectedChallenge.id),
+        ];
+        writeLocalHistory(eventId, selectedChallenge.id, nextHistory);
+        setExecutionResult({ ...exec, attempt: localAttempt });
+        setExecutionHistory(nextHistory);
 
         if (
           exec.success &&
