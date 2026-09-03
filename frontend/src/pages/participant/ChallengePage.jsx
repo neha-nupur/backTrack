@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -7,6 +7,7 @@ import {
 } from "../../services/challengeService";
 import { getLiveEvents } from "../../services/eventService";
 import CyberBackground from "../../components/CyberBackground";
+import ConfirmDialog from "../../components/admin/ConfirmDialog";
 import mcaLogo from "../../assets/logo.png";
 
 const getTimeRemainingMs = (endTime) => {
@@ -76,6 +77,9 @@ const ChallengePage = () => {
 
   // Track whether the event has ended (timer hit zero)
   const [eventEnded, setEventEnded] = useState(false);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const eventEndedRef = useRef(eventEnded);
+  eventEndedRef.current = eventEnded;
 
   // Challenge list state
   const [challenges, setChallenges] = useState([]);
@@ -161,6 +165,22 @@ const ChallengePage = () => {
     const intervalId = window.setInterval(syncTimer, 1000);
     return () => window.clearInterval(intervalId);
   }, [eventEndTime]);
+
+  // Keep browser Back from leaving an active event without confirmation.
+  useEffect(() => {
+    const guardedUrl = window.location.href;
+    window.history.pushState({ challengeGuard: true }, "", guardedUrl);
+
+    const handlePopState = () => {
+      if (eventEndedRef.current) return;
+
+      window.history.pushState({ challengeGuard: true }, "", guardedUrl);
+      setExitDialogOpen(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Save solved IDs to localStorage
   const markChallengeSolved = useCallback(
@@ -373,6 +393,19 @@ const ChallengePage = () => {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  const requestExit = () => {
+    if (eventEnded) {
+      navigate("/participant/dashboard", { replace: true });
+      return;
+    }
+    setExitDialogOpen(true);
+  };
+
+  const confirmExit = () => {
+    setExitDialogOpen(false);
+    navigate("/participant/dashboard", { replace: true });
+  };
+
   const solvedPercentage = challenges.length > 0
     ? Math.round((solvedChallengeIds.size / challenges.length) * 100)
     : 0;
@@ -387,7 +420,7 @@ const ChallengePage = () => {
         {/* Left: Brand + Slogan */}
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/participant/dashboard")}
+            onClick={requestExit}
             className="flex items-center gap-3 group text-left cursor-pointer"
             title="Back to Participant Console"
           >
@@ -518,6 +551,17 @@ const ChallengePage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={exitDialogOpen && !eventEnded}
+        title="Exit Event?"
+        message="Are you sure you want to leave this event? Your active event session will end, and you will return to the participant dashboard."
+        confirmLabel="Exit Event"
+        cancelLabel="Continue Event"
+        isDanger
+        onConfirm={confirmExit}
+        onCancel={() => setExitDialogOpen(false)}
+      />
 
       {/* ── MAIN WORKSPACE ── */}
       <div className="relative z-10 flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">

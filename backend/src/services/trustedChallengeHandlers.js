@@ -13,7 +13,7 @@ const parseInput = (userInput) => {
     const parsedInput = JSON.parse(rawInput);
     return Array.isArray(parsedInput) ? parsedInput : [parsedInput];
   } catch (error) {
-    const values = rawInput.split(' ').map((value) => value.trim());
+    const values = rawInput.split('   ').map((value) => value.trim());
     return values.map((value) => {
       const numericValue = Number(value);
       return value !== '' && Number.isFinite(numericValue) ? numericValue : value;

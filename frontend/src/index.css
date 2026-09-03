@@ -74,6 +74,7 @@
   .cyber-card {
     background: linear-gradient(180deg, rgba(8, 16, 31, 0.88) 0%, rgba(4, 9, 18, 0.95) 100%);
     border: 1px solid rgba(22, 43, 77, 0.7);
+    -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
   }
 

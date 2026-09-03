@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import adminResultsService from "../../services/adminResultsService";
@@ -23,8 +23,6 @@ const ResultsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const [selectedAttempt, setSelectedAttempt] = useState(null);
-
-  const pollInterval = useRef(null);
 
   // Initial load
   useEffect(() => {
@@ -98,27 +96,6 @@ const ResultsPage = () => {
 
     fetchEventData();
   }, [selectedEventId, page, searchTerm, fetchEventData]);
-
-  // Live polling
-  useEffect(() => {
-    // Clear existing interval
-    if (pollInterval.current) {
-      clearInterval(pollInterval.current);
-      pollInterval.current = null;
-    }
-
-    if (selectedEventId && eventStats?.event?.status === "LIVE") {
-      pollInterval.current = setInterval(() => {
-        fetchEventData(true);
-      }, 5000);
-    }
-
-    return () => {
-      if (pollInterval.current) {
-        clearInterval(pollInterval.current);
-      }
-    };
-  }, [selectedEventId, eventStats?.event?.status, fetchEventData]);
 
   const handleExport = async () => {
     try {
