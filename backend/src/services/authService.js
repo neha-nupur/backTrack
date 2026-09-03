@@ -7,6 +7,17 @@ const env = require('../config/env');
 const AppError = require('../utils/appError');
 const ROLES = require('../constants/roles');
 const { PARTICIPANT_STATUS } = require('../constants/status');
+const { getDBStatus } = require('../config/database');
+
+const assertDatabaseAvailable = () => {
+  if (getDBStatus() !== 'connected') {
+    throw new AppError(
+      'Authentication is temporarily unavailable because the database is disconnected.',
+      503,
+      'DATABASE_UNAVAILABLE'
+    );
+  }
+};
 
 /**
  * Generate JWT Token
@@ -42,6 +53,7 @@ const verifyToken = (token) => {
  * Authenticate Admin User
  */
 const authenticateAdmin = async (email, password) => {
+  assertDatabaseAvailable();
   const admin = await Admin.findOne({ email: email.toLowerCase().trim() });
 
   if (!admin) {
@@ -70,6 +82,7 @@ const authenticateAdmin = async (email, password) => {
  * Uses DB-backed master password hash.
  */
 const authenticateParticipant = async (email, password) => {
+  assertDatabaseAvailable();
   const normalizedEmail = email.toLowerCase().trim();
   const participant = await Participant.findOne({ email: normalizedEmail });
 
@@ -120,6 +133,7 @@ const authenticateParticipant = async (email, password) => {
  * Fetch authenticated user identity by ID and Role
  */
 const getUserById = async (userId, role) => {
+  assertDatabaseAvailable();
   if (role === ROLES.ADMIN) {
     const admin = await Admin.findById(userId);
     if (!admin) {
