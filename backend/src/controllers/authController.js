@@ -35,9 +35,7 @@ const adminLogin = async (req, res, next) => {
  */
 const getCurrentUser = async (req, res, next) => {
   try {
-    const { id, role } = req.user;
-    const userProfile = await authService.getUserById(id, role);
-    return successResponse(res, 'User session verified', { user: userProfile }, 200);
+    return successResponse(res, 'User session verified', { user: req.user }, 200);
   } catch (error) {
     next(error);
   }

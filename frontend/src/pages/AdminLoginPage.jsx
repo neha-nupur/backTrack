@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { useAuth } from '../context/AuthContext';
 import CyberBackground from '../components/CyberBackground';
+import logo from '../assets/logo.png';
 
 const AdminLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const { login } = useAuth();
+  const { login, isAdminAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && isAdminAuthenticated) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [authLoading, isAdminAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,7 +39,7 @@ const AdminLoginPage = () => {
 
       if (response && response.success && response.data) {
         login(response.data.user, response.data.token);
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
       } else {
         throw new Error(response.message || 'Admin login failed');
       }
@@ -51,32 +59,16 @@ const AdminLoginPage = () => {
       <div className="relative z-10 w-full max-w-md flex flex-col items-center">
         {/* Brand Header with 3D Wireframe Cube Icon */}
         <div className="text-center mb-6 space-y-1.5 flex flex-col items-center">
-          {/* Isometric Cube Logo */}
-          <div className="w-14 h-14 rounded-2xl bg-[#071120] border border-cyan-500/25 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.15)] mb-1.5 relative group">
-            <div className="absolute inset-0 bg-blue-600/5 rounded-2xl animate-pulse"></div>
-            <svg
-              className="w-8 h-8 text-cyan-400/90 drop-shadow-[0_0_8px_rgba(14,165,233,0.4)]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-              <line x1="12" y1="22.08" x2="12" y2="12" />
-            </svg>
+          <div className="w-20 h-20 rounded-2xl bg-[#071120] border border-cyan-500/25 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.15)] mb-1.5 relative group overflow-hidden">
+            <img src={logo} alt="Cout Masters Coding Club Logo" className="w-full h-full object-contain" />
           </div>
 
           {/* Title and Tagline */}
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-['Geist',sans-serif] glowing-text">
-            backTrack
+            ꓭAƆʞTЯAƆK
           </h1>
           <p className="text-[11px] text-cyan-400/70 font-mono tracking-widest uppercase flex items-center justify-center gap-2">
-            <span>System Management</span>
-            <span className="text-slate-600">•</span>
-            <span>Console Root</span>
+            
           </p>
         </div>
 
@@ -127,14 +119,13 @@ const AdminLoginPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span className="text-cyan-400/90">&gt; Admin Email</span>
-                  <span className="text-[10px] text-slate-500">Root Account</span>
+                  <span className="text-cyan-400/90"> Admin Email</span>
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@college.edu"
+                  placeholder="Enter Admin Email"
                   required
                   disabled={loading}
                   autoComplete="email"
@@ -145,20 +136,43 @@ const AdminLoginPage = () => {
 
               <div>
                 <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span className="text-cyan-400/90">&gt; Admin Password</span>
-                  <span className="text-[10px] text-slate-500">Master Secret</span>
+                  <span className="text-cyan-400/90">Admin Password</span>
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  required
-                  disabled={loading}
-                  autoComplete="current-password"
-                  className="w-full bg-[#050b16] border border-slate-800 focus:border-cyan-500/70 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 font-mono transition-colors disabled:opacity-50"
-                  style={{ backgroundColor: '#050b16', color: '#e2e8f0' }}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter Admin Password"
+                    required
+                    disabled={loading}
+                    autoComplete="current-password"
+                    className="w-full bg-[#050b16] border border-slate-800 focus:border-cyan-500/70 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none rounded-xl px-4 py-2.5 pr-12 text-sm text-slate-200 placeholder-slate-600 font-mono transition-colors disabled:opacity-50"
+                    style={{ backgroundColor: '#050b16', color: '#e2e8f0' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    disabled={loading}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-cyan-300 transition disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      {showPassword ? (
+                        <>
+                          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                          <circle cx="12" cy="12" r="2.5" />
+                        </>
+                      ) : (
+                        <>
+                          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                          <path d="m4 4 16 16" />
+                        </>
+                      )}
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Glowing Deep Blue Action Button */}
@@ -198,7 +212,7 @@ const AdminLoginPage = () => {
 
         {/* Micro Footer Notice */}
         <p className="text-[10px] font-mono text-slate-600 text-center mt-5">
-          Privileged Console Access • Authenticated Sessions Monitored
+          © 2026 backTrack. All rights reserved.
         </p>
       </div>
     </div>

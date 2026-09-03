@@ -3,6 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getLiveEvents, getUpcomingEvents, startEvent } from '../services/eventService';
 import CyberBackground from '../components/CyberBackground';
+import logo from '../assets/logo.png';
+
+const formatCountdown = (milliseconds) => {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+};
 
 const ParticipantDashboardShell = () => {
   const { participantUser, logout } = useAuth();
@@ -13,6 +25,7 @@ const ParticipantDashboardShell = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [startStatus, setStartStatus] = useState({});
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   const handleLogout = async () => {
     await logout('PARTICIPANT');
@@ -20,6 +33,7 @@ const ParticipantDashboardShell = () => {
   };
 
   const [passwordModalEvent, setPasswordModalEvent] = useState(null);
+  const [notStartedEvent, setNotStartedEvent] = useState(null);
   const [eventPasswordInput, setEventPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(null);
 
@@ -45,7 +59,21 @@ const ParticipantDashboardShell = () => {
     fetchEvents();
   }, [fetchEvents]);
 
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, []);
+
   const initiateStartEvent = (event) => {
+    const startTime = new Date(event.startTime).getTime();
+    if (Number.isFinite(startTime) && currentTime < startTime) {
+      setNotStartedEvent(event);
+      return;
+    }
+
     if (event.isPasswordProtected) {
       setPasswordModalEvent(event);
       setEventPasswordInput('');
@@ -116,7 +144,7 @@ const ParticipantDashboardShell = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                <img src={logo} alt="Cout Masters Coding Club Logo" className="w-10 h-10 rounded-lg object-contain border border-cyan-500/40" />
                 <span className="text-xs text-cyan-400 font-bold tracking-widest uppercase">
                   [ backTrack TERMINAL ]
                 </span>
@@ -172,7 +200,7 @@ const ParticipantDashboardShell = () => {
              style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(56, 189, 248, 0.05)' }}>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-slate-400 font-sans font-bold tracking-wider uppercase mr-2">
-              EVENTS MENU:
+              EVENTS List:
             </span>
             {TABS.map((tab) => (
               <button
@@ -223,11 +251,10 @@ const ParticipantDashboardShell = () => {
             <div className="grid grid-cols-1 gap-5">
               {liveEvents.map((ev) => {
                 const statusInfo = startStatus[ev.id] || {};
-                const now = new Date();
                 const start = new Date(ev.startTime);
                 const end = new Date(ev.endTime);
-                const isBeforeStart = now < start;
-                const isAfterEnd = now > end;
+                const isBeforeStart = currentTime < start.getTime();
+                const isAfterEnd = currentTime > end.getTime();
 
                 return (
                   <div
@@ -284,9 +311,9 @@ const ParticipantDashboardShell = () => {
                       {/* Status text */}
                       <div className="text-xs text-slate-400 font-sans text-center">
                         {isBeforeStart ? (
-                          <span className="text-amber-400/90 flex items-center gap-1.5 justify-center">
-                            <span>⏰</span>
-                            <span>Starts at {start.toLocaleTimeString()}</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 'bold' , fontSize: '16px' }} className="text-amber-400/90 flex items-center gap-1.5 justify-center">
+                            <span>Event</span>
+                            <span>Starts in {formatCountdown(start.getTime() - currentTime)}</span>
                           </span>
                         ) : isAfterEnd ? (
                           <span className="text-red-400/80">This event has reached its end time.</span>
@@ -388,6 +415,25 @@ const ParticipantDashboardShell = () => {
       </div>
 
       {/* ── PASSWORD MODAL ── */}
+      {notStartedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm font-mono">
+          <div className="bg-[#071324] border border-amber-700/70 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center">
+            <div className="text-3xl">⏰</div>
+            <h3 className="text-base font-bold text-amber-300">Event is not started yet</h3>
+            <p className="text-xs text-slate-300 font-sans">
+              Please wait until the event starts before entering the event password.
+            </p>
+            <button
+              type="button"
+              onClick={() => setNotStartedEvent(null)}
+              className="px-5 py-2.5 text-xs font-mono font-bold rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer"
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
+
       {passwordModalEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm font-mono">
           <div

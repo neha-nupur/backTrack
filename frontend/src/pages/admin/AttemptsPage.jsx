@@ -45,14 +45,6 @@ const AttemptsPage = () => {
     fetchAttempts();
   }, [fetchAttempts]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchAttempts();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [fetchAttempts]);
-
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages) {
       setPage(newPage);

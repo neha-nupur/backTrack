@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from '../services/apiClient';
 
 const AuthContext = createContext(null);
@@ -27,68 +27,85 @@ export const AuthProvider = ({ children }) => {
   const [participantToken, setParticipantToken] = useState(() => localStorage.getItem('blackbox_participant_token') || null);
 
   const [loading, setLoading] = useState(true);
+  const refreshPromiseRef = useRef(null);
 
   // Verify and refresh both sessions independently
   const refreshSessions = useCallback(async () => {
-    const curAdminToken = localStorage.getItem('blackbox_admin_token');
-    const curParticipantToken = localStorage.getItem('blackbox_participant_token');
-
-    const promises = [];
-
-    // Verify Admin session if token exists
-    if (curAdminToken) {
-      promises.push(
-        apiClient
-          .get('/auth/me', {
-            headers: { Authorization: `Bearer ${curAdminToken}` },
-          })
-          .then((res) => {
-            if (res?.success && res.data?.user && res.data.user.role === 'ADMIN') {
-              setAdminUser(res.data.user);
-              localStorage.setItem('blackbox_admin_user', JSON.stringify(res.data.user));
-            } else {
-              throw new Error('Invalid admin session');
-            }
-          })
-          .catch(() => {
-            localStorage.removeItem('blackbox_admin_token');
-            localStorage.removeItem('blackbox_admin_user');
-            setAdminToken(null);
-            setAdminUser(null);
-          })
-      );
-    } else {
-      setAdminUser(null);
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
     }
 
-    // Verify Participant session if token exists
-    if (curParticipantToken) {
-      promises.push(
-        apiClient
-          .get('/auth/me', {
-            headers: { Authorization: `Bearer ${curParticipantToken}` },
-          })
-          .then((res) => {
-            if (res?.success && res.data?.user && res.data.user.role === 'PARTICIPANT') {
-              setParticipantUser(res.data.user);
-              localStorage.setItem('blackbox_participant_user', JSON.stringify(res.data.user));
-            } else {
-              throw new Error('Invalid participant session');
-            }
-          })
-          .catch(() => {
-            localStorage.removeItem('blackbox_participant_token');
-            localStorage.removeItem('blackbox_participant_user');
-            setParticipantToken(null);
-            setParticipantUser(null);
-          })
-      );
-    } else {
-      setParticipantUser(null);
-    }
+    const refreshPromise = (async () => {
+      const curAdminToken = localStorage.getItem('blackbox_admin_token');
+      const curParticipantToken = localStorage.getItem('blackbox_participant_token');
 
-    await Promise.allSettled(promises);
-    setLoading(false);
+      const promises = [];
+
+      // Verify Admin session if token exists
+      if (curAdminToken) {
+        promises.push(
+          apiClient
+            .get('/auth/me', {
+              headers: { Authorization: `Bearer ${curAdminToken}` },
+            })
+            .then((res) => {
+              if (res?.success && res.data?.user && res.data.user.role === 'ADMIN') {
+                setAdminUser(res.data.user);
+                localStorage.setItem('blackbox_admin_user', JSON.stringify(res.data.user));
+              } else {
+                throw new Error('Invalid admin session');
+              }
+            })
+            .catch(() => {
+              localStorage.removeItem('blackbox_admin_token');
+              localStorage.removeItem('blackbox_admin_user');
+              setAdminToken(null);
+              setAdminUser(null);
+            })
+        );
+      } else {
+        setAdminUser(null);
+      }
+
+      // Verify Participant session if token exists
+      if (curParticipantToken) {
+        promises.push(
+          apiClient
+            .get('/auth/me', {
+              headers: { Authorization: `Bearer ${curParticipantToken}` },
+            })
+            .then((res) => {
+              if (res?.success && res.data?.user && res.data.user.role === 'PARTICIPANT') {
+                setParticipantUser(res.data.user);
+                localStorage.setItem('blackbox_participant_user', JSON.stringify(res.data.user));
+              } else {
+                throw new Error('Invalid participant session');
+              }
+            })
+            .catch(() => {
+              localStorage.removeItem('blackbox_participant_token');
+              localStorage.removeItem('blackbox_participant_user');
+              setParticipantToken(null);
+              setParticipantUser(null);
+            })
+        );
+      } else {
+        setParticipantUser(null);
+      }
+
+      await Promise.allSettled(promises);
+      setLoading(false);
+    })();
+
+    refreshPromiseRef.current = refreshPromise;
+
+    try {
+      return await refreshPromise;
+    } finally {
+      if (refreshPromiseRef.current === refreshPromise) {
+        refreshPromiseRef.current = null;
+      }
+    }
   }, []);
 
   useEffect(() => {

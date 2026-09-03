@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CyberBackground from '../components/CyberBackground';
+import logo from '../assets/logo.png';
 
 const AdminLayout = ({ children, title = 'Administration' }) => {
   const { adminUser, logout } = useAuth();
@@ -33,8 +34,8 @@ const AdminLayout = ({ children, title = 'Administration' }) => {
           {/* Brand */}
           <div className="p-5 border-b border-slate-800/70 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-mono font-bold shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                bT
+              <div className="w-9 h-9 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-mono font-bold shadow-[0_0_15px_rgba(6,182,212,0.2)] overflow-hidden">
+                <img src={logo} alt="Cout Masters Coding Club Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h1 className="text-sm font-bold tracking-wider text-slate-100 font-mono">backTrack</h1>
