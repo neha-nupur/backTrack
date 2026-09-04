@@ -48,14 +48,14 @@ const configureSecurity = (app, express) => {
   // never trigger for legitimate participant usage, but still prevents
   // genuine bot floods or runaway clients from hammering the server.
   //
-  // Sensitive auth endpoints (/auth/login, /auth/admin/login) are NOT covered
-  // here — they have their own strict brute-force limiter in authRoutes.js
-  // (30 attempts per 15 minutes) which is applied before this one.
+  // Login endpoints are excluded so authentication is not limited by client IP.
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100_000,              // 1 lakh requests per IP per 15 min
     standardHeaders: true,     // Return RateLimit-* headers (RFC 6585)
     legacyHeaders: false,      // Disable legacy X-RateLimit-* headers
+    skip: (req) =>
+      req.path === "/auth/login" || req.path === "/auth/admin/login",
     message: {
       success: false,
       message:
